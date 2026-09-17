@@ -20,10 +20,11 @@ public class ReplayAdapter implements ObdAdapter {
     }
 
     @Override
-    public Optional<ObdMessage> pollNextMessage() {
+    public Optional<AdapterResult> pollNextMessage() {
         if (!sessionActive) return Optional.empty();
         if (replayStream.hasNext()) {
-            return Optional.of(replayStream.next());
+            ObdMessage msg = replayStream.next();
+            return Optional.of(new AdapterResult(msg, "{\"replay_raw\":\"" + msg.getMessageId() + "\"}"));
         }
         return Optional.empty();
     }

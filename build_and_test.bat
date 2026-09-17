@@ -42,6 +42,10 @@ echo.
 echo [TEST] OBD Input and Pre-processing
 java -cp out com.ignitionai.obdinput.ObdInputTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -cp out com.ignitionai.obdinput.test.ContractValidationTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -cp out com.ignitionai.obdinput.test.BluetoothAdapterTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
 echo [TEST] OBD Generator

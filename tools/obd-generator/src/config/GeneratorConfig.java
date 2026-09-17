@@ -9,6 +9,7 @@ public class GeneratorConfig {
     private Map<String, Double> samplingRatesHz = new java.util.HashMap<>();
     private long durationMs;
     private long randomSeed;
+    private ScenarioType scenarioType = ScenarioType.CITY_DRIVING;
     
     // Anomaly simulation
     private Map<String, Double> bias = new java.util.HashMap<>();
@@ -33,6 +34,9 @@ public class GeneratorConfig {
     
     public long getRandomSeed() { return randomSeed; }
     public void setRandomSeed(long randomSeed) { this.randomSeed = randomSeed; }
+    
+    public ScenarioType getScenarioType() { return scenarioType; }
+    public void setScenarioType(ScenarioType type) { this.scenarioType = type; }
     
     public Map<String, Double> getBias() { return bias; }
     public void setBias(Map<String, Double> bias) { this.bias = bias; }

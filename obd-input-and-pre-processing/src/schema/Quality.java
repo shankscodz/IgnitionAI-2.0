@@ -2,7 +2,7 @@ package com.ignitionai.obdinput.schema;
 
 import java.util.Objects;
 
-public final class Quality {
+public class Quality {
     private final QualityStatus status;
     private final String rawQuality;
     private final Integer ageMs;

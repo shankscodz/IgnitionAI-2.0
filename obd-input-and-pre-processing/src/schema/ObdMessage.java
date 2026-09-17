@@ -18,6 +18,7 @@ public final class ObdMessage {
     private final List<DtcObservation> dtcObservations;
     private final CapabilitySnapshot capabilitySnapshot;
     private final Provenance rawProvenance;
+    private final DtcSnapshotCompleteness dtcSnapshotCompleteness;
 
     private ObdMessage(Builder builder) {
         this.messageId = Objects.requireNonNull(builder.messageId, "messageId is required");
@@ -32,6 +33,7 @@ public final class ObdMessage {
         this.dtcObservations = builder.dtcObservations != null ? List.copyOf(builder.dtcObservations) : List.of();
         this.capabilitySnapshot = builder.capabilitySnapshot;
         this.rawProvenance = Objects.requireNonNull(builder.rawProvenance, "rawProvenance is required");
+        this.dtcSnapshotCompleteness = builder.dtcSnapshotCompleteness != null ? builder.dtcSnapshotCompleteness : DtcSnapshotCompleteness.UNKNOWN;
     }
 
     public String getSchemaVersion() { return schemaVersion; }
@@ -47,6 +49,7 @@ public final class ObdMessage {
     public List<DtcObservation> getDtcObservations() { return dtcObservations; }
     public CapabilitySnapshot getCapabilitySnapshot() { return capabilitySnapshot; }
     public Provenance getRawProvenance() { return rawProvenance; }
+    public DtcSnapshotCompleteness getDtcSnapshotCompleteness() { return dtcSnapshotCompleteness; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -63,6 +66,7 @@ public final class ObdMessage {
         private List<DtcObservation> dtcObservations;
         private CapabilitySnapshot capabilitySnapshot;
         private Provenance rawProvenance;
+        private DtcSnapshotCompleteness dtcSnapshotCompleteness;
 
         public Builder messageId(String v) { this.messageId = v; return this; }
         public Builder sessionId(String v) { this.sessionId = v; return this; }
@@ -76,6 +80,7 @@ public final class ObdMessage {
         public Builder dtcObservations(List<DtcObservation> v) { this.dtcObservations = v; return this; }
         public Builder capabilitySnapshot(CapabilitySnapshot v) { this.capabilitySnapshot = v; return this; }
         public Builder rawProvenance(Provenance v) { this.rawProvenance = v; return this; }
+        public Builder dtcSnapshotCompleteness(DtcSnapshotCompleteness v) { this.dtcSnapshotCompleteness = v; return this; }
 
         public ObdMessage build() { return new ObdMessage(this); }
     }

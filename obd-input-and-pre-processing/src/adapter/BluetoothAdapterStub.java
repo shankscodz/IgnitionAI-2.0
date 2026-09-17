@@ -17,7 +17,7 @@ public class BluetoothAdapterStub implements ObdAdapter {
     }
 
     @Override
-    public Optional<ObdMessage> pollNextMessage() {
+    public Optional<AdapterResult> pollNextMessage() {
         throw new UnsupportedDeviceException("Live Bluetooth integration is not supported until tested with physical hardware.");
     }
 

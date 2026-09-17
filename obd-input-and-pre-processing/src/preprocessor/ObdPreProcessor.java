@@ -1,98 +1,83 @@
 package com.ignitionai.obdinput.preprocessor;
 
-import com.ignitionai.obdinput.schema.ObdMessage;
-import com.ignitionai.obdinput.schema.SensorReading;
-import com.ignitionai.obdinput.schema.DtcObservation;
-import com.ignitionai.obdinput.schema.ObservationType;
-import com.ignitionai.obdinput.schema.QualityStatus;
-import com.ignitionai.obdinput.schema.Quality;
+import com.ignitionai.obdinput.schema.*;
 import java.util.*;
 
 public class ObdPreProcessor {
 
-    private long lastSequence = -1;
-    // Map of signal_id to last monotonic_ms
-    private final Map<String, Long> lastMonotonicTimes = new HashMap<>();
-    // To track duplicates (session, signal, ecu, time)
-    private final Set<String> seenSensorReadings = new HashSet<>();
-    // To track active DTCs for session (to support snapshot clearing logic)
-    private final Set<String> knownSessionDtcs = new HashSet<>();
+    private final Map<String, Long> lastSequence = new HashMap<>();
+    private final Map<String, Map<String, Long>> lastMonotonicTimes = new HashMap<>();
+    private final Map<String, Set<String>> seenSensorReadings = new HashMap<>();
+    private final Map<String, Set<String>> knownSessionDtcs = new HashMap<>();
 
-    public ObdMessage process(ObdMessage message) {
+    public ProcessingResult process(ObdMessage message) {
         validateSchemaAndRequiredFields(message);
         
+        String session = message.getSessionId();
+        List<QualityEvent> qualityEvents = new ArrayList<>();
+        
         long currentSeq = message.getSequence();
-        if (lastSequence != -1 && currentSeq != lastSequence + 1) {
-            // Sequence gap detected. We log it conceptually, not silently repair.
-            System.err.println("Sequence gap detected. Expected " + (lastSequence + 1) + ", got " + currentSeq);
+        Long lastSeq = lastSequence.get(session);
+        if (lastSeq != null && currentSeq != lastSeq + 1) {
+            qualityEvents.add(new SequenceGapEvent(session, System.currentTimeMillis(), lastSeq + 1, currentSeq));
         }
-        lastSequence = currentSeq;
+        lastSequence.put(session, currentSeq);
 
+        Map<String, Long> sessionTimes = lastMonotonicTimes.computeIfAbsent(session, k -> new HashMap<>());
+        Set<String> sessionSeenReadings = seenSensorReadings.computeIfAbsent(session, k -> new HashSet<>());
+        
         List<SensorReading> processedReadings = new ArrayList<>();
         for (SensorReading reading : message.getSensorReadings()) {
-            // 8. Never interpolate at input boundary. Interpolated field must be false.
             if (reading.getQuality().isInterpolated()) {
                 throw new ValidationException("Interpolated data is not allowed at input boundary.");
             }
             
-            // Generate duplicate check key
             String key = String.format("%s-%s-%s-%d-%f", 
-                message.getSessionId(), 
-                reading.getSignalId(), 
-                reading.getEcuId(), 
-                reading.getMonotonicMs(),
-                reading.getValue());
+                session, reading.getSignalId(), reading.getEcuId(), reading.getMonotonicMs(), reading.getValue());
 
             String duplicateCheckKey = String.format("%s-%s-%s-%d", 
-                message.getSessionId(), 
-                reading.getSignalId(), 
-                reading.getEcuId(), 
-                reading.getMonotonicMs());
+                session, reading.getSignalId(), reading.getEcuId(), reading.getMonotonicMs());
 
-            if (seenSensorReadings.contains(key)) {
-                // Exact repeat - deduplicate (drop)
+            if (sessionSeenReadings.contains(key)) {
                 continue;
-            } else if (seenSensorReadings.contains(duplicateCheckKey)) {
-                // Conflicting duplicate (same time/signal, different value) - preserve and flag
+            } else if (sessionSeenReadings.contains(duplicateCheckKey)) {
                 processedReadings.add(flagAsConflicting(reading));
                 continue;
             }
-            seenSensorReadings.add(key);
-            seenSensorReadings.add(duplicateCheckKey);
+            sessionSeenReadings.add(key);
+            sessionSeenReadings.add(duplicateCheckKey);
 
-            // Out of order detection
-            long lastTime = lastMonotonicTimes.getOrDefault(reading.getSignalId(), -1L);
+            long lastTime = sessionTimes.getOrDefault(reading.getSignalId(), -1L);
             if (reading.getMonotonicMs() < lastTime) {
                 processedReadings.add(flagAsOutOfOrder(reading));
+                // Do not update max monotonic time because this reading is old
             } else {
                 processedReadings.add(reading);
+                sessionTimes.put(reading.getSignalId(), reading.getMonotonicMs());
             }
-            lastMonotonicTimes.put(reading.getSignalId(), reading.getMonotonicMs());
         }
 
+        Set<String> sessionDtcs = knownSessionDtcs.computeIfAbsent(session, k -> new HashSet<>());
         List<DtcObservation> processedDtcs = new ArrayList<>();
-        boolean isCompleteSnapshot = false;
 
         for (DtcObservation dtc : message.getDtcObservations()) {
             processedDtcs.add(dtc);
-            if (dtc.getObservationType() == ObservationType.SNAPSHOT) {
-                isCompleteSnapshot = true;
-                knownSessionDtcs.add(dtc.getCode());
-            } else if (dtc.getObservationType() == ObservationType.ADDED) {
-                knownSessionDtcs.add(dtc.getCode());
+            if (dtc.getObservationType() == ObservationType.SNAPSHOT || dtc.getObservationType() == ObservationType.ADDED) {
+                sessionDtcs.add(dtc.getCode());
             } else if (dtc.getObservationType() == ObservationType.CLEARED) {
-                knownSessionDtcs.remove(dtc.getCode());
+                sessionDtcs.remove(dtc.getCode());
             }
         }
         
-        // A complete DTC snapshot must be distinguished from an incremental update.
-        // An empty incremental update must never clear previously observed DTCs.
-        // If it's a complete snapshot, and no DTCs are present, it implicitly clears them.
-        if (isCompleteSnapshot && message.getDtcObservations().isEmpty()) {
-            knownSessionDtcs.clear();
+        if (message.getDtcSnapshotCompleteness() == DtcSnapshotCompleteness.COMPLETE) {
+            Set<String> codesInThisMessage = new HashSet<>();
+            for (DtcObservation dtc : message.getDtcObservations()) {
+                codesInThisMessage.add(dtc.getCode());
+            }
+            sessionDtcs.retainAll(codesInThisMessage);
         }
 
-        return ObdMessage.builder()
+        ObdMessage processedMsg = ObdMessage.builder()
             .messageId(message.getMessageId())
             .sessionId(message.getSessionId())
             .sequence(message.getSequence())
@@ -105,7 +90,10 @@ public class ObdPreProcessor {
             .dtcObservations(processedDtcs)
             .capabilitySnapshot(message.getCapabilitySnapshot())
             .rawProvenance(message.getRawProvenance())
+            .dtcSnapshotCompleteness(message.getDtcSnapshotCompleteness())
             .build();
+            
+        return new ProcessingResult(processedMsg, qualityEvents);
     }
 
     private void validateSchemaAndRequiredFields(ObdMessage message) {
@@ -129,13 +117,11 @@ public class ObdPreProcessor {
     }
 
     private SensorReading flagAsConflicting(SensorReading reading) {
-        // Conceptually flag quality as INVALID due to conflict.
         Quality newQuality = new Quality(QualityStatus.INVALID, "CONFLICTING_DUPLICATE", reading.getQuality().getAgeMs());
         return copyWithNewQuality(reading, newQuality);
     }
 
     private SensorReading flagAsOutOfOrder(SensorReading reading) {
-        // Flag quality as STALE due to being out-of-order
         Quality newQuality = new Quality(QualityStatus.STALE, "OUT_OF_ORDER", reading.getQuality().getAgeMs());
         return copyWithNewQuality(reading, newQuality);
     }
@@ -154,5 +140,10 @@ public class ObdPreProcessor {
             .quality(q)
             .provenance(r.getProvenance())
             .build();
+    }
+    
+    // For testing
+    public Set<String> getKnownDtcs(String sessionId) {
+        return knownSessionDtcs.getOrDefault(sessionId, Collections.emptySet());
     }
 }

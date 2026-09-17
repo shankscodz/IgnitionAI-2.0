@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.stream.Stream;
 
 public class LocalFileStorageProvider implements StorageProvider {
     
@@ -37,15 +38,46 @@ public class LocalFileStorageProvider implements StorageProvider {
 
     @Override
     public void persistNormalizedMessage(ObdMessage message) {
-        // Files older than 12 months would be cleaned up in a background task.
         Path sessionDir = rootDir.resolve("normalized").resolve(message.getSessionId());
         try {
             Files.createDirectories(sessionDir);
             Path filePath = sessionDir.resolve(message.getMessageId() + ".json");
-            // Basic persistence (In real system, serialize object to JSON properly)
-            Files.writeString(filePath, "{ \"message_id\": \"" + message.getMessageId() + "\" }"); 
+            Files.writeString(filePath, ObdJsonMapper.serialize(message));
         } catch (IOException e) {
             throw new RuntimeException("Failed to persist normalized record", e);
         }
+    }
+    
+    public void cleanupOldFiles() {
+        try {
+            Instant now = Instant.now();
+            Instant rawCutoff = now.minus(90, ChronoUnit.DAYS);
+            Instant normalizedCutoff = now.minus(365, ChronoUnit.DAYS);
+            
+            Path rawDir = rootDir.resolve("raw");
+            if (Files.exists(rawDir)) {
+                try (Stream<Path> files = Files.walk(rawDir)) {
+                    files.filter(Files::isRegularFile).forEach(p -> checkAndDelete(p, rawCutoff));
+                }
+            }
+            
+            Path normDir = rootDir.resolve("normalized");
+            if (Files.exists(normDir)) {
+                try (Stream<Path> files = Files.walk(normDir)) {
+                    files.filter(Files::isRegularFile).forEach(p -> checkAndDelete(p, normalizedCutoff));
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Cleanup failed: " + e.getMessage());
+        }
+    }
+    
+    private void checkAndDelete(Path file, Instant cutoff) {
+        try {
+            Instant modified = Files.getLastModifiedTime(file).toInstant();
+            if (modified.isBefore(cutoff)) {
+                Files.delete(file);
+            }
+        } catch (IOException ignored) {}
     }
 }

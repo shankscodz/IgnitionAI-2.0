@@ -25,9 +25,11 @@ public class TestAdapter implements ObdAdapter {
     }
 
     @Override
-    public Optional<ObdMessage> pollNextMessage() {
+    public Optional<AdapterResult> pollNextMessage() {
         if (!sessionActive) return Optional.empty();
-        return Optional.ofNullable(messageQueue.poll());
+        ObdMessage msg = messageQueue.poll();
+        if (msg == null) return Optional.empty();
+        return Optional.of(new AdapterResult(msg, "{\"test_raw\":\"" + msg.getMessageId() + "\"}"));
     }
 
     @Override
