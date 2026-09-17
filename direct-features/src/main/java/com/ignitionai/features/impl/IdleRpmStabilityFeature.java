@@ -3,12 +3,12 @@ package com.ignitionai.features.impl;
 import com.ignitionai.features.Feature;
 import com.ignitionai.features.FeatureStatus;
 import com.ignitionai.features.FeatureValue;
+import com.ignitionai.features.SensorReading;
+import com.ignitionai.features.WindowBuffer;
 import com.ignitionai.context.VehicleContext;
 import com.ignitionai.context.OperatingRegime;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Collections;
 
 public class IdleRpmStabilityFeature implements Feature {
 
@@ -16,7 +16,7 @@ public class IdleRpmStabilityFeature implements Feature {
     public String getFeatureId() { return "idle_rpm_stability"; }
 
     @Override
-    public String getName() { return "Idle RPM Stability"; }
+    public String getName() { return "Idle RPM Stability (Variance)"; }
 
     @Override
     public List<String> getInputs() { return List.of("engine_rpm"); }
@@ -31,31 +31,30 @@ public class IdleRpmStabilityFeature implements Feature {
     public String getWindow() { return "10s_regime"; }
 
     @Override
-    public String getFeatureVersion() { return "1.0"; }
+    public String getFeatureVersion() { return "1.1"; }
 
     @Override
-    public FeatureValue calculate(Map<String, Double> inputObservations, Map<String, String> observationIds, VehicleContext context) {
+    public FeatureValue calculate(WindowBuffer buffer, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
-        
-        if (context == null || context.getOperatingConditions().getOperatingRegime() != OperatingRegime.WARM_IDLE) {
+        if (ts == null || context.getOperatingConditions().getOperatingRegime() != OperatingRegime.WARM_IDLE) {
             return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
         }
 
-        if (!inputObservations.containsKey("engine_rpm")) {
+        List<SensorReading> readings = buffer.getReadings("engine_rpm", ts, 10000L); // 10s window
+        if (readings.size() < 10) { // require enough samples for a valid variance
             return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
         }
 
-        // Mock variance for demonstration
-        Double rpm = inputObservations.get("engine_rpm");
-        if (rpm == null) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.UNAVAILABLE, getFeatureVersion(), ts);
+        double sum = 0;
+        for (SensorReading r : readings) sum += r.getValue();
+        double mean = sum / readings.size();
+
+        double sqDiffSum = 0;
+        for (SensorReading r : readings) {
+            sqDiffSum += Math.pow(r.getValue() - mean, 2);
         }
+        double variance = sqDiffSum / readings.size();
 
-        Double stability = rpm * 0.01; // Mock calculation
-        
-        String obsId = observationIds.get("engine_rpm");
-        List<String> obsIdList = obsId != null ? List.of(obsId) : Collections.emptyList();
-
-        return new FeatureValue(getFeatureId(), stability, FeatureStatus.AVAILABLE, obsIdList, ts, getUnits(), getFeatureVersion(), "computed_over_idle_window");
+        return new FeatureValue(getFeatureId(), variance, FeatureStatus.AVAILABLE, List.of("MULTI-OBS-" + ts), ts, getUnits(), getFeatureVersion(), "samples=" + readings.size());
     }
 }

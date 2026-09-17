@@ -1,12 +1,10 @@
 package com.ignitionai.features;
 
 import com.ignitionai.features.impl.SpeedMpsFeature;
-import com.ignitionai.features.impl.TimestampSecondsFeature;
 import com.ignitionai.context.VehicleContext;
 import com.ignitionai.context.VehicleContextManager;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 public class DirectFeaturesTest {
     public static void main(String[] args) {
@@ -20,32 +18,28 @@ public class DirectFeaturesTest {
 
     private static void testFeatureCalculation() {
         SpeedMpsFeature speedFeature = new SpeedMpsFeature();
-        Map<String, Double> inputs = new HashMap<>();
-        inputs.put("vehicle_speed_kph", 36.0);
-        
-        Map<String, String> obsIds = new HashMap<>();
-        obsIds.put("vehicle_speed_kph", "OBS-01");
+        WindowBuffer buffer = new WindowBuffer();
+        buffer.addReading(new SensorReading("vehicle_speed_kph", 36.0, 1000L, "kph"));
         
         VehicleContextManager manager = new VehicleContextManager();
         VehicleContext ctx = manager.initializeContext("V1", 1000L);
         
-        FeatureValue val = speedFeature.calculate(inputs, obsIds, ctx);
+        FeatureValue val = speedFeature.calculate(buffer, ctx);
         
         assert val.getStatus() == FeatureStatus.AVAILABLE;
         assert Math.abs(val.getValue() - 10.0) < 0.001;
-        assert val.getSourceObservationIds().contains("OBS-01");
         assert val.getUnits().equals("m/s");
         System.out.println("  PASS  testFeatureCalculation");
     }
 
     private static void testMissingInputFallback() {
         SpeedMpsFeature speedFeature = new SpeedMpsFeature();
-        Map<String, Double> inputs = new HashMap<>(); // missing vehicle_speed_kph
+        WindowBuffer buffer = new WindowBuffer(); // missing vehicle_speed_kph
         
         VehicleContextManager manager = new VehicleContextManager();
         VehicleContext ctx = manager.initializeContext("V1", 1000L);
         
-        FeatureValue val = speedFeature.calculate(inputs, new HashMap<>(), ctx);
+        FeatureValue val = speedFeature.calculate(buffer, ctx);
         
         assert val.getStatus() == FeatureStatus.INSUFFICIENT_DATA;
         assert val.getValue() == null;

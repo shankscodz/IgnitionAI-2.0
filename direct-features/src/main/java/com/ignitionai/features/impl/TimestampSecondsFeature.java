@@ -3,11 +3,11 @@ package com.ignitionai.features.impl;
 import com.ignitionai.features.Feature;
 import com.ignitionai.features.FeatureStatus;
 import com.ignitionai.features.FeatureValue;
+import com.ignitionai.features.SensorReading;
+import com.ignitionai.features.WindowBuffer;
 import com.ignitionai.context.VehicleContext;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Collections;
 
 public class TimestampSecondsFeature implements Feature {
     
@@ -30,24 +30,21 @@ public class TimestampSecondsFeature implements Feature {
     public String getWindow() { return "instantaneous"; }
     
     @Override
-    public String getFeatureVersion() { return "1.1"; }
+    public String getFeatureVersion() { return "1.2"; }
 
     @Override
-    public FeatureValue calculate(Map<String, Double> inputObservations, Map<String, String> observationIds, VehicleContext context) {
+    public FeatureValue calculate(WindowBuffer buffer, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
-        if (!inputObservations.containsKey("monotonic_ms")) {
+        if (ts == null) return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), null);
+
+        List<SensorReading> readings = buffer.getReadings("monotonic_ms", ts, 1000L);
+        if (readings.isEmpty()) {
             return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
         }
         
-        Double monotonicMs = inputObservations.get("monotonic_ms");
-        if (monotonicMs == null) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.UNAVAILABLE, getFeatureVersion(), ts);
-        }
+        SensorReading latest = readings.get(readings.size() - 1);
+        Double tsSeconds = latest.getValue() / 1000.0;
         
-        Double tsSeconds = monotonicMs / 1000.0;
-        String obsId = observationIds.get("monotonic_ms");
-        List<String> obsIdList = obsId != null ? List.of(obsId) : Collections.emptyList();
-        
-        return new FeatureValue(getFeatureId(), tsSeconds, FeatureStatus.AVAILABLE, obsIdList, ts, getUnits(), getFeatureVersion(), "valid");
+        return new FeatureValue(getFeatureId(), tsSeconds, FeatureStatus.AVAILABLE, List.of("OBS-TIME-" + latest.getTimestampMs()), ts, getUnits(), getFeatureVersion(), "valid");
     }
 }

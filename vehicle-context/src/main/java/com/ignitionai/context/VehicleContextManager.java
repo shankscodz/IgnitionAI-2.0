@@ -1,5 +1,7 @@
 package com.ignitionai.context;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class VehicleContextManager {
@@ -7,20 +9,34 @@ public class VehicleContextManager {
     public VehicleContext initializeContext(String vehicleId, Long timestampMs) {
         Identity identity = new Identity(vehicleId, null, null, null, Identity.IdentityStatus.UNKNOWN, "manager", 0.0);
         Configuration configuration = new Configuration(null, null, null, null, null, null, null, null, null, null, DataState.UNKNOWN);
-        OperatingConditions conditions = new OperatingConditions(null, null, null, null, null, null, null, null, OperatingRegime.UNKNOWN, null, 0L, DataState.UNKNOWN);
+        OperatingConditions conditions = new OperatingConditions(null, null, null, null, null, null, null, null, OperatingRegime.UNKNOWN, null, new ArrayList<>(), 0L, DataState.UNKNOWN);
         EvidenceQuality quality = new EvidenceQuality(null, null, null, null, null, 0, 0, false, null, null, 0L, "1.0");
         
         return new VehicleContext("1.0", timestampMs, identity, configuration, conditions, quality);
     }
 
     public VehicleContext transitionContext(VehicleContext previousContext, Map<String, Double> newObservations, Long currentTimestampMs) {
+        if (previousContext.getContextTimestampMs() != null && currentTimestampMs < previousContext.getContextTimestampMs()) {
+            throw new IllegalArgumentException("Timestamps must be monotonic. Current: " + currentTimestampMs + " Previous: " + previousContext.getContextTimestampMs());
+        }
+
         // Resolve operating regime
         OperatingRegime currentRegime = determineRegime(newObservations);
         OperatingRegime previousRegime = previousContext.getOperatingConditions().getOperatingRegime();
         OperatingRegime transition = (currentRegime != previousRegime) ? currentRegime : null;
 
+        List<OperatingRegime> history = new ArrayList<>(previousContext.getOperatingConditions().getTransitionHistory());
+        if (transition != null) {
+            history.add(transition);
+        }
+
         Boolean engineRunning = newObservations.containsKey("engine_rpm") && newObservations.get("engine_rpm") > 0;
         
+        Long elapsed = 0L;
+        if (previousContext.getContextTimestampMs() != null) {
+            elapsed = previousContext.getOperatingConditions().getElapsedSessionTimeMs() + (currentTimestampMs - previousContext.getContextTimestampMs());
+        }
+
         OperatingConditions newConditions = new OperatingConditions(
             engineRunning,
             newObservations.get("engine_rpm"),
@@ -32,7 +48,8 @@ public class VehicleContextManager {
             newObservations.get("ambient_air_temperature"),
             currentRegime,
             transition,
-            previousContext.getOperatingConditions().getElapsedSessionTimeMs() + (currentTimestampMs - previousContext.getContextTimestampMs()),
+            history,
+            elapsed,
             DataState.KNOWN
         );
 

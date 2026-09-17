@@ -3,11 +3,11 @@ package com.ignitionai.features.impl;
 import com.ignitionai.features.Feature;
 import com.ignitionai.features.FeatureStatus;
 import com.ignitionai.features.FeatureValue;
+import com.ignitionai.features.SensorReading;
+import com.ignitionai.features.WindowBuffer;
 import com.ignitionai.context.VehicleContext;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Collections;
 
 public class WindowedStatisticFeature implements Feature {
     
@@ -30,26 +30,24 @@ public class WindowedStatisticFeature implements Feature {
     public String getWindow() { return "60s"; }
     
     @Override
-    public String getFeatureVersion() { return "1.0"; }
+    public String getFeatureVersion() { return "1.1"; }
 
     @Override
-    public FeatureValue calculate(Map<String, Double> inputObservations, Map<String, String> observationIds, VehicleContext context) {
+    public FeatureValue calculate(WindowBuffer buffer, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
-        if (!inputObservations.containsKey("engine_coolant_temperature")) {
+        if (ts == null) return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), null);
+
+        List<SensorReading> readings = buffer.getReadings("engine_coolant_temperature", ts, 60000L);
+        if (readings.size() < 5) { // minSampleCount
             return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
         }
         
-        Double temp = inputObservations.get("engine_coolant_temperature");
-        if (temp == null) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.UNAVAILABLE, getFeatureVersion(), ts);
+        double sum = 0;
+        for (SensorReading r : readings) {
+            sum += r.getValue();
         }
+        double mean = sum / readings.size();
         
-        // Mocking window mean calculation for MVP
-        Double meanTemp = temp; 
-        
-        String obsId = observationIds.get("engine_coolant_temperature");
-        List<String> obsIdList = obsId != null ? List.of(obsId) : Collections.emptyList();
-        
-        return new FeatureValue(getFeatureId(), meanTemp, FeatureStatus.AVAILABLE, obsIdList, ts, getUnits(), getFeatureVersion(), "valid");
+        return new FeatureValue(getFeatureId(), mean, FeatureStatus.AVAILABLE, List.of("MULTI-OBS-" + ts), ts, getUnits(), getFeatureVersion(), "samples=" + readings.size());
     }
 }

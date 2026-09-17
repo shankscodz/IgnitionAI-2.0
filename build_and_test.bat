@@ -1,6 +1,6 @@
 @echo off
 echo ===================================================
-echo Building IgnitionAI 2.0 Phase 1 Modules...
+echo Building IgnitionAI 2.0 Phase 3 Modules...
 echo ===================================================
 
 if not exist "out" mkdir "out"
@@ -15,43 +15,53 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
-echo.
 echo ===================================================
 echo Running Tests...
 echo ===================================================
 
 echo [TEST] Technical Sources
-java -cp out com.ignitionai.technicalsources.test.TechnicalSourceTest
+java -ea -cp out com.ignitionai.technicalsources.test.TechnicalSourceTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
 echo [TEST] Fact Extraction
-java -cp out com.ignitionai.factextraction.test.FactExtractionTest
+java -ea -cp out com.ignitionai.factextraction.test.FactExtractionTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
 echo [TEST] Consistency Checks
-java -cp out com.ignitionai.consistencychecks.test.ConsistencyCheckTest
+java -ea -cp out com.ignitionai.consistencychecks.test.ConsistencyCheckTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
 echo [TEST] Linked Registries
-java -cp out com.ignitionai.linkedregistries.test.LinkedRegistriesTest
+java -ea -cp out com.ignitionai.linkedregistries.test.LinkedRegistriesTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
 echo [TEST] Vehicle Context (Phase 3)
-java -cp out com.ignitionai.context.VehicleContextTest
+java -ea -cp out com.ignitionai.context.VehicleContextTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -ea -cp out com.ignitionai.context.ContextAcceptanceTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
 echo [TEST] Direct Features (Phase 3)
-java -cp out com.ignitionai.features.DirectFeaturesTest
+java -ea -cp out com.ignitionai.features.DirectFeaturesTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -ea -cp out com.ignitionai.features.FeatureAcceptanceTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
 echo [TEST] Virtual Sensors (Phase 3)
-java -cp out com.ignitionai.virtualsensors.VirtualSensorsTest
+java -ea -cp out com.ignitionai.virtualsensors.VirtualSensorsTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -ea -cp out com.ignitionai.virtualsensors.SensorAcceptanceTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Phase 3 Pipeline Runner
+java -ea -cp out tools.pipeline_runner.Phase3PipelineRunner
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.

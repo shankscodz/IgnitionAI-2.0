@@ -3,11 +3,12 @@ package com.ignitionai.features.impl;
 import com.ignitionai.features.Feature;
 import com.ignitionai.features.FeatureStatus;
 import com.ignitionai.features.FeatureValue;
+import com.ignitionai.features.SensorReading;
+import com.ignitionai.features.WindowBuffer;
 import com.ignitionai.context.VehicleContext;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Collections;
+import java.util.stream.Collectors;
 
 public class SpeedMpsFeature implements Feature {
     
@@ -30,24 +31,21 @@ public class SpeedMpsFeature implements Feature {
     public String getWindow() { return "instantaneous"; }
     
     @Override
-    public String getFeatureVersion() { return "1.1"; }
+    public String getFeatureVersion() { return "1.2"; }
 
     @Override
-    public FeatureValue calculate(Map<String, Double> inputObservations, Map<String, String> observationIds, VehicleContext context) {
+    public FeatureValue calculate(WindowBuffer buffer, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
-        if (!inputObservations.containsKey("vehicle_speed_kph")) {
+        if (ts == null) return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), null);
+
+        List<SensorReading> readings = buffer.getReadings("vehicle_speed_kph", ts, 1000L); // 1s tolerance for instantaneous
+        if (readings.isEmpty()) {
             return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
         }
         
-        Double speedKph = inputObservations.get("vehicle_speed_kph");
-        if (speedKph == null) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.UNAVAILABLE, getFeatureVersion(), ts);
-        }
+        SensorReading latest = readings.get(readings.size() - 1);
+        Double speedMps = latest.getValue() / 3.6;
         
-        Double speedMps = speedKph / 3.6;
-        String obsId = observationIds.get("vehicle_speed_kph");
-        List<String> obsIdList = obsId != null ? List.of(obsId) : Collections.emptyList();
-        
-        return new FeatureValue(getFeatureId(), speedMps, FeatureStatus.AVAILABLE, obsIdList, ts, getUnits(), getFeatureVersion(), "valid");
+        return new FeatureValue(getFeatureId(), speedMps, FeatureStatus.AVAILABLE, List.of("OBS-SPEED-" + latest.getTimestampMs()), ts, getUnits(), getFeatureVersion(), "valid");
     }
 }

@@ -1,8 +1,7 @@
 package com.ignitionai.features;
 
-import java.util.List;
-import java.util.Map;
 import com.ignitionai.context.VehicleContext;
+import java.util.List;
 
 public interface Feature {
     String getFeatureId();
@@ -12,6 +11,6 @@ public interface Feature {
     String getFormula();
     String getWindow();
     String getFeatureVersion();
-    
-    FeatureValue calculate(Map<String, Double> inputObservations, Map<String, String> observationIds, VehicleContext context);
+
+    FeatureValue calculate(WindowBuffer buffer, VehicleContext context);
 }

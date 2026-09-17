@@ -1,5 +1,8 @@
 package com.ignitionai.context;
 
+import java.util.Collections;
+import java.util.List;
+
 public class OperatingConditions {
     private final Boolean engineRunningState;
     private final Double rpm;
@@ -12,13 +15,15 @@ public class OperatingConditions {
     
     private final OperatingRegime operatingRegime;
     private final OperatingRegime regimeTransition;
+    private final List<OperatingRegime> transitionHistory;
     private final Long elapsedSessionTimeMs;
     private final DataState state;
 
     public OperatingConditions(Boolean engineRunningState, Double rpm, Double vehicleSpeed, Double load, 
                                Double throttle, Double coolantTemperature, Double intakeTemperature, 
                                Double ambientTemperature, OperatingRegime operatingRegime, 
-                               OperatingRegime regimeTransition, Long elapsedSessionTimeMs, DataState state) {
+                               OperatingRegime regimeTransition, List<OperatingRegime> transitionHistory,
+                               Long elapsedSessionTimeMs, DataState state) {
         this.engineRunningState = engineRunningState;
         this.rpm = rpm;
         this.vehicleSpeed = vehicleSpeed;
@@ -29,6 +34,7 @@ public class OperatingConditions {
         this.ambientTemperature = ambientTemperature;
         this.operatingRegime = operatingRegime != null ? operatingRegime : OperatingRegime.UNKNOWN;
         this.regimeTransition = regimeTransition;
+        this.transitionHistory = transitionHistory != null ? Collections.unmodifiableList(transitionHistory) : Collections.emptyList();
         this.elapsedSessionTimeMs = elapsedSessionTimeMs;
         this.state = state != null ? state : DataState.UNKNOWN;
     }
@@ -43,6 +49,7 @@ public class OperatingConditions {
     public Double getAmbientTemperature() { return ambientTemperature; }
     public OperatingRegime getOperatingRegime() { return operatingRegime; }
     public OperatingRegime getRegimeTransition() { return regimeTransition; }
+    public List<OperatingRegime> getTransitionHistory() { return transitionHistory; }
     public Long getElapsedSessionTimeMs() { return elapsedSessionTimeMs; }
     public DataState getState() { return state; }
 }
