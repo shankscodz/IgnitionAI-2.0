@@ -1,0 +1,9 @@
+[
+  {
+    "vehicleId": "VIN_TRAIN_01",
+    "label": "critical_failure",
+    "isCensored": false,
+    "timeToEventHours": 120,
+    "history": []
+  }
+]

@@ -70,6 +70,39 @@ java -ea -cp out tools.pipeline_runner.Phase3ToPhase4ContractTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
+echo [TEST] Degradation State (Phase 5)
+java -ea -cp out com.ignitionai.degradation.state.DegradationStateTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Trend Analyzer (Phase 5)
+java -ea -cp out com.ignitionai.degradation.analyzer.StateSpaceModelTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -ea -cp out com.ignitionai.degradation.analyzer.FutureDataLeakageTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -ea -cp out com.ignitionai.degradation.analyzer.GroundTruthReconstructionTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -ea -cp out com.ignitionai.degradation.analyzer.TrendAnalyzerTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Event Risk (Phase 5)
+java -ea -cp out com.ignitionai.degradation.risk.HazardModelTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+java -ea -cp out com.ignitionai.degradation.risk.EventRiskTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Phase 5 Pipeline Runner
+java -ea -cp out tools.pipeline_runner.Phase5PipelineRunner
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Phase 5 Labelled History Generator
+java -ea -cp out tools.pipeline_runner.LabelledHistoryGenerator
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
 echo ===================================================
 echo ALL TESTS PASSED SUCCESSFULLY!
 echo ===================================================
