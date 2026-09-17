@@ -1,8 +1,8 @@
 package com.ignitionai.features.impl;
 
 import com.ignitionai.features.Feature;
-import com.ignitionai.features.FeatureStatus;
-import com.ignitionai.features.FeatureValue;
+import com.ignitionai.obd.AnalyticalObservation;
+import com.ignitionai.obd.AnalyticalObservation.QualityState;
 import com.ignitionai.features.SensorReading;
 import com.ignitionai.features.WindowBuffer;
 import com.ignitionai.context.VehicleContext;
@@ -30,21 +30,22 @@ public class MissingDataFractionFeature implements Feature {
     public String getWindow() { return "60s"; }
 
     @Override
-    public String getFeatureVersion() { return "1.0"; }
+    public String getFeatureVersion() { return "1.1"; }
 
     @Override
-    public FeatureValue calculate(WindowBuffer buffer, VehicleContext context) {
+    public AnalyticalObservation calculate(WindowBuffer buffer, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
-        if (ts == null) return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
+        String cv = context != null ? context.getContextVersion() : null;
+        if (ts == null) return AnalyticalObservation.unavailable(getFeatureId(), QualityState.INSUFFICIENT_DATA, getFeatureVersion(), ts, "No context timestamp");
 
         List<SensorReading> readings = buffer.getReadings("engine_rpm", ts, 60000L); // 60s
         
-        // Assume expected rate is 1Hz (60 samples)
-        int expectedSamples = 60;
+        int expectedSamples = 60; // Assume 1Hz
         int actualSamples = Math.min(readings.size(), expectedSamples);
         
         double missingFraction = 1.0 - ((double) actualSamples / expectedSamples);
 
-        return new FeatureValue(getFeatureId(), missingFraction, FeatureStatus.AVAILABLE, List.of("MULTI-OBS-" + ts), ts, getUnits(), getFeatureVersion(), "samples=" + readings.size());
+        return new AnalyticalObservation(getFeatureId(), missingFraction, getUnits(), ts, QualityState.AVAILABLE, 
+                List.of("MULTI-OBS-" + ts), cv, getFeatureVersion(), "uncertainty unavailable", "samples=" + readings.size());
     }
 }

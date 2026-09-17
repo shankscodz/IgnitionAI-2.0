@@ -1,6 +1,7 @@
 package com.ignitionai.features;
 
 import com.ignitionai.context.VehicleContext;
+import com.ignitionai.obd.AnalyticalObservation;
 import java.util.List;
 
 public interface Feature {
@@ -12,5 +13,5 @@ public interface Feature {
     String getWindow();
     String getFeatureVersion();
 
-    FeatureValue calculate(WindowBuffer buffer, VehicleContext context);
+    AnalyticalObservation calculate(WindowBuffer buffer, VehicleContext context);
 }

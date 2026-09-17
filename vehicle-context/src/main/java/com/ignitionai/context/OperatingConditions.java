@@ -16,6 +16,7 @@ public class OperatingConditions {
     private final OperatingRegime operatingRegime;
     private final OperatingRegime regimeTransition;
     private final List<OperatingRegime> transitionHistory;
+    private final Long currentRegimeStartTimeMs;
     private final Long elapsedSessionTimeMs;
     private final DataState state;
 
@@ -23,7 +24,7 @@ public class OperatingConditions {
                                Double throttle, Double coolantTemperature, Double intakeTemperature, 
                                Double ambientTemperature, OperatingRegime operatingRegime, 
                                OperatingRegime regimeTransition, List<OperatingRegime> transitionHistory,
-                               Long elapsedSessionTimeMs, DataState state) {
+                               Long currentRegimeStartTimeMs, Long elapsedSessionTimeMs, DataState state) {
         this.engineRunningState = engineRunningState;
         this.rpm = rpm;
         this.vehicleSpeed = vehicleSpeed;
@@ -35,6 +36,7 @@ public class OperatingConditions {
         this.operatingRegime = operatingRegime != null ? operatingRegime : OperatingRegime.UNKNOWN;
         this.regimeTransition = regimeTransition;
         this.transitionHistory = transitionHistory != null ? Collections.unmodifiableList(transitionHistory) : Collections.emptyList();
+        this.currentRegimeStartTimeMs = currentRegimeStartTimeMs;
         this.elapsedSessionTimeMs = elapsedSessionTimeMs;
         this.state = state != null ? state : DataState.UNKNOWN;
     }
@@ -50,6 +52,7 @@ public class OperatingConditions {
     public OperatingRegime getOperatingRegime() { return operatingRegime; }
     public OperatingRegime getRegimeTransition() { return regimeTransition; }
     public List<OperatingRegime> getTransitionHistory() { return transitionHistory; }
+    public Long getCurrentRegimeStartTimeMs() { return currentRegimeStartTimeMs; }
     public Long getElapsedSessionTimeMs() { return elapsedSessionTimeMs; }
     public DataState getState() { return state; }
 }

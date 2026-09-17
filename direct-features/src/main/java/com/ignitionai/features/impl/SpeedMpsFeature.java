@@ -1,14 +1,13 @@
 package com.ignitionai.features.impl;
 
 import com.ignitionai.features.Feature;
-import com.ignitionai.features.FeatureStatus;
-import com.ignitionai.features.FeatureValue;
+import com.ignitionai.obd.AnalyticalObservation;
+import com.ignitionai.obd.AnalyticalObservation.QualityState;
 import com.ignitionai.features.SensorReading;
 import com.ignitionai.features.WindowBuffer;
 import com.ignitionai.context.VehicleContext;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class SpeedMpsFeature implements Feature {
     
@@ -31,21 +30,23 @@ public class SpeedMpsFeature implements Feature {
     public String getWindow() { return "instantaneous"; }
     
     @Override
-    public String getFeatureVersion() { return "1.2"; }
+    public String getFeatureVersion() { return "1.3"; }
 
     @Override
-    public FeatureValue calculate(WindowBuffer buffer, VehicleContext context) {
+    public AnalyticalObservation calculate(WindowBuffer buffer, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
-        if (ts == null) return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), null);
+        String cv = context != null ? context.getContextVersion() : null;
+        if (ts == null) return AnalyticalObservation.unavailable(getFeatureId(), QualityState.INSUFFICIENT_DATA, getFeatureVersion(), null, "No timestamp");
 
-        List<SensorReading> readings = buffer.getReadings("vehicle_speed_kph", ts, 1000L); // 1s tolerance for instantaneous
+        List<SensorReading> readings = buffer.getReadings("vehicle_speed_kph", ts, 1000L);
         if (readings.isEmpty()) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
+            return AnalyticalObservation.unavailable(getFeatureId(), QualityState.INSUFFICIENT_DATA, getFeatureVersion(), ts, "No readings");
         }
         
         SensorReading latest = readings.get(readings.size() - 1);
         Double speedMps = latest.getValue() / 3.6;
         
-        return new FeatureValue(getFeatureId(), speedMps, FeatureStatus.AVAILABLE, List.of("OBS-SPEED-" + latest.getTimestampMs()), ts, getUnits(), getFeatureVersion(), "valid");
+        return new AnalyticalObservation(getFeatureId(), speedMps, getUnits(), ts, QualityState.AVAILABLE, 
+                List.of("OBS-SPEED-" + latest.getTimestampMs()), cv, getFeatureVersion(), "uncertainty unavailable", "direct calculation");
     }
 }

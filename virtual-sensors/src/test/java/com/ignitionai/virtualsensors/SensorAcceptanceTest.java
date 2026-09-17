@@ -7,7 +7,8 @@ import java.util.Map;
 
 import com.ignitionai.context.VehicleContext;
 import com.ignitionai.context.VehicleContextManager;
-import com.ignitionai.features.SensorReading;
+import com.ignitionai.obd.AnalyticalObservation;
+import com.ignitionai.obd.AnalyticalObservation.QualityState;
 
 public class SensorAcceptanceTest {
     public static void main(String[] args) {
@@ -36,9 +37,9 @@ public class SensorAcceptanceTest {
         VehicleContextManager mgr = new VehicleContextManager();
         VehicleContext ctx = mgr.initializeContext("V1", 1000L); // Engine off by default
         
-        SensorOutput out = runtime.evaluate("test_sensor", new HashMap<>(), ctx);
-        assert out.getStatus() == SensorOutput.Status.NOT_APPLICABLE;
-        assert out.getReason().contains("Precondition failed");
+        AnalyticalObservation out = runtime.evaluate("test_sensor", new HashMap<>(), ctx, 1000L);
+        assert out.getQualityState() == QualityState.NOT_APPLICABLE;
+        assert out.getProvenance().contains("Precondition failed");
         
         System.out.println("  PASS  testPreconditionFailure");
     }
@@ -50,8 +51,8 @@ public class SensorAcceptanceTest {
         def.setInputSignalIds(List.of("req_signal"));
         runtime.loadSensors(List.of(def));
         
-        SensorOutput out = runtime.evaluate("test_sensor", new HashMap<>(), null);
-        assert out.getStatus() == SensorOutput.Status.MISSING_INPUTS;
+        AnalyticalObservation out = runtime.evaluate("test_sensor", new HashMap<>(), null, 1000L);
+        assert out.getQualityState() == QualityState.MISSING_INPUTS;
         
         System.out.println("  PASS  testMissingDependency");
     }
@@ -64,12 +65,12 @@ public class SensorAcceptanceTest {
         def.setFormulaOrModelReference("a / b");
         runtime.loadSensors(List.of(def));
         
-        Map<String, SensorReading> inputs = new HashMap<>();
-        inputs.put("a", new SensorReading("a", 10.0, 100L, "U"));
-        inputs.put("b", new SensorReading("b", 2.0, 100L, "U"));
+        Map<String, AnalyticalObservation> inputs = new HashMap<>();
+        inputs.put("a", new AnalyticalObservation("a", 10.0, "U", 100L, QualityState.AVAILABLE, List.of(), "v1", "v1", "0", "sim"));
+        inputs.put("b", new AnalyticalObservation("b", 2.0, "U", 100L, QualityState.AVAILABLE, List.of(), "v1", "v1", "0", "sim"));
         
-        SensorOutput out = runtime.evaluate("ratio_sensor", inputs, null);
-        assert out.getStatus() == SensorOutput.Status.AVAILABLE;
+        AnalyticalObservation out = runtime.evaluate("ratio_sensor", inputs, null, 100L);
+        assert out.getQualityState() == QualityState.AVAILABLE;
         assert out.getValue() == 5.0;
         
         System.out.println("  PASS  testFormulaEvaluation");
@@ -86,14 +87,14 @@ public class SensorAcceptanceTest {
             @Override
             public String getSensorId() { return "bad_plugin"; }
             @Override
-            public SensorOutput execute(Map<String, Double> inputs, VehicleContext context) {
+            public AnalyticalObservation execute(Map<String, AnalyticalObservation> inputs, VehicleContext context) {
                 throw new RuntimeException("Simulated crash");
             }
         });
         
-        SensorOutput out = runtime.evaluate("bad_plugin", new HashMap<>(), null);
-        assert out.getStatus() == SensorOutput.Status.EVALUATION_ERROR;
-        assert out.getReason().contains("Simulated crash");
+        AnalyticalObservation out = runtime.evaluate("bad_plugin", new HashMap<>(), null, 100L);
+        assert out.getQualityState() == QualityState.EVALUATION_ERROR;
+        assert out.getProvenance().contains("Simulated crash");
         
         System.out.println("  PASS  testPluginIsolation");
     }

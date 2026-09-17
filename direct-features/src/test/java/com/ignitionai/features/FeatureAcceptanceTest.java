@@ -5,6 +5,7 @@ import com.ignitionai.features.impl.IdleRpmStabilityFeature;
 import com.ignitionai.features.impl.WindowedStatisticFeature;
 import com.ignitionai.context.VehicleContext;
 import com.ignitionai.context.VehicleContextManager;
+import com.ignitionai.obd.AnalyticalObservation;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,9 +34,9 @@ public class FeatureAcceptanceTest {
         VehicleContext ctx = mgr.initializeContext("V1", ts + 5000);
         
         WindowedStatisticFeature feature = new WindowedStatisticFeature();
-        FeatureValue val = feature.calculate(buffer, ctx);
+        AnalyticalObservation val = feature.calculate(buffer, ctx);
         
-        assert val.getStatus() == FeatureStatus.AVAILABLE;
+        assert val.getQualityState() == AnalyticalObservation.QualityState.AVAILABLE;
         assert Math.abs(val.getValue() - 82.5) < 0.001; // Mean of 80,81,82,83,84,85
         System.out.println("  PASS  testWindowedMean");
     }
@@ -55,9 +56,9 @@ public class FeatureAcceptanceTest {
         VehicleContext ctx = mgr.transitionContext(ctx1, obs, ts + 9000); // Forces WARM_IDLE
         
         IdleRpmStabilityFeature feature = new IdleRpmStabilityFeature();
-        FeatureValue val = feature.calculate(buffer, ctx);
+        AnalyticalObservation val = feature.calculate(buffer, ctx);
         
-        assert val.getStatus() == FeatureStatus.AVAILABLE;
+        assert val.getQualityState() == AnalyticalObservation.QualityState.AVAILABLE;
         assert val.getValue() > 0; // Variance should be exactly 100
         System.out.println("  PASS  testIdleRpmStability");
     }
@@ -74,9 +75,9 @@ public class FeatureAcceptanceTest {
         VehicleContext ctx = mgr.initializeContext("V1", ts + 50000);
         
         CoolantWarmupRateFeature feature = new CoolantWarmupRateFeature();
-        FeatureValue val = feature.calculate(buffer, ctx);
+        AnalyticalObservation val = feature.calculate(buffer, ctx);
         
-        assert val.getStatus() == FeatureStatus.AVAILABLE;
+        assert val.getQualityState() == AnalyticalObservation.QualityState.AVAILABLE;
         assert Math.abs(val.getValue() - 6.0) < 0.001; // Slope: 6 deg/min
         System.out.println("  PASS  testCoolantWarmupRate");
     }
@@ -93,9 +94,9 @@ public class FeatureAcceptanceTest {
         VehicleContext ctx = mgr.initializeContext("V1", ts + 5000);
         
         WindowedStatisticFeature feature = new WindowedStatisticFeature();
-        FeatureValue val = feature.calculate(buffer, ctx);
+        AnalyticalObservation val = feature.calculate(buffer, ctx);
         
-        assert val.getStatus() == FeatureStatus.INSUFFICIENT_DATA;
+        assert val.getQualityState() == AnalyticalObservation.QualityState.INSUFFICIENT_DATA;
         assert val.getValue() == null;
         System.out.println("  PASS  testInsufficientData");
     }

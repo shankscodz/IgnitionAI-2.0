@@ -3,8 +3,7 @@ package com.ignitionai.features;
 import com.ignitionai.features.impl.SpeedMpsFeature;
 import com.ignitionai.context.VehicleContext;
 import com.ignitionai.context.VehicleContextManager;
-
-import java.util.List;
+import com.ignitionai.obd.AnalyticalObservation;
 
 public class DirectFeaturesTest {
     public static void main(String[] args) {
@@ -24,11 +23,11 @@ public class DirectFeaturesTest {
         VehicleContextManager manager = new VehicleContextManager();
         VehicleContext ctx = manager.initializeContext("V1", 1000L);
         
-        FeatureValue val = speedFeature.calculate(buffer, ctx);
+        AnalyticalObservation val = speedFeature.calculate(buffer, ctx);
         
-        assert val.getStatus() == FeatureStatus.AVAILABLE;
+        assert val.getQualityState() == AnalyticalObservation.QualityState.AVAILABLE;
         assert Math.abs(val.getValue() - 10.0) < 0.001;
-        assert val.getUnits().equals("m/s");
+        assert val.getUnit().equals("m/s");
         System.out.println("  PASS  testFeatureCalculation");
     }
 
@@ -39,9 +38,9 @@ public class DirectFeaturesTest {
         VehicleContextManager manager = new VehicleContextManager();
         VehicleContext ctx = manager.initializeContext("V1", 1000L);
         
-        FeatureValue val = speedFeature.calculate(buffer, ctx);
+        AnalyticalObservation val = speedFeature.calculate(buffer, ctx);
         
-        assert val.getStatus() == FeatureStatus.INSUFFICIENT_DATA;
+        assert val.getQualityState() == AnalyticalObservation.QualityState.INSUFFICIENT_DATA;
         assert val.getValue() == null;
         System.out.println("  PASS  testMissingInputFallback");
     }

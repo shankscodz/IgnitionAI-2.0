@@ -9,7 +9,7 @@ public class VehicleContextManager {
     public VehicleContext initializeContext(String vehicleId, Long timestampMs) {
         Identity identity = new Identity(vehicleId, null, null, null, Identity.IdentityStatus.UNKNOWN, "manager", 0.0);
         Configuration configuration = new Configuration(null, null, null, null, null, null, null, null, null, null, DataState.UNKNOWN);
-        OperatingConditions conditions = new OperatingConditions(null, null, null, null, null, null, null, null, OperatingRegime.UNKNOWN, null, new ArrayList<>(), 0L, DataState.UNKNOWN);
+        OperatingConditions conditions = new OperatingConditions(null, null, null, null, null, null, null, null, OperatingRegime.UNKNOWN, null, new ArrayList<>(), timestampMs, 0L, DataState.UNKNOWN);
         EvidenceQuality quality = new EvidenceQuality(null, null, null, null, null, 0, 0, false, null, null, 0L, "1.0");
         
         return new VehicleContext("1.0", timestampMs, identity, configuration, conditions, quality);
@@ -33,8 +33,10 @@ public class VehicleContextManager {
         Boolean engineRunning = newObservations.containsKey("engine_rpm") && newObservations.get("engine_rpm") > 0;
         
         Long elapsed = 0L;
+        Long regimeStartMs = currentTimestampMs;
         if (previousContext.getContextTimestampMs() != null) {
             elapsed = previousContext.getOperatingConditions().getElapsedSessionTimeMs() + (currentTimestampMs - previousContext.getContextTimestampMs());
+            regimeStartMs = (transition != null) ? currentTimestampMs : previousContext.getOperatingConditions().getCurrentRegimeStartTimeMs();
         }
 
         OperatingConditions newConditions = new OperatingConditions(
@@ -49,6 +51,7 @@ public class VehicleContextManager {
             currentRegime,
             transition,
             history,
+            regimeStartMs,
             elapsed,
             DataState.KNOWN
         );

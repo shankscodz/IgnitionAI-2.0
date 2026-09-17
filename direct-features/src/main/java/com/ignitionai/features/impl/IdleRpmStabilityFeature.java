@@ -1,8 +1,8 @@
 package com.ignitionai.features.impl;
 
 import com.ignitionai.features.Feature;
-import com.ignitionai.features.FeatureStatus;
-import com.ignitionai.features.FeatureValue;
+import com.ignitionai.obd.AnalyticalObservation;
+import com.ignitionai.obd.AnalyticalObservation.QualityState;
 import com.ignitionai.features.SensorReading;
 import com.ignitionai.features.WindowBuffer;
 import com.ignitionai.context.VehicleContext;
@@ -22,7 +22,7 @@ public class IdleRpmStabilityFeature implements Feature {
     public List<String> getInputs() { return List.of("engine_rpm"); }
 
     @Override
-    public String getUnits() { return "rpm_variance"; }
+    public String getUnits() { return "rpm^2"; }
 
     @Override
     public String getFormula() { return "variance(engine_rpm)"; }
@@ -31,18 +31,19 @@ public class IdleRpmStabilityFeature implements Feature {
     public String getWindow() { return "10s_regime"; }
 
     @Override
-    public String getFeatureVersion() { return "1.1"; }
+    public String getFeatureVersion() { return "1.2"; }
 
     @Override
-    public FeatureValue calculate(WindowBuffer buffer, VehicleContext context) {
+    public AnalyticalObservation calculate(WindowBuffer buffer, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
+        String cv = context != null ? context.getContextVersion() : null;
         if (ts == null || context.getOperatingConditions().getOperatingRegime() != OperatingRegime.WARM_IDLE) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
+            return AnalyticalObservation.unavailable(getFeatureId(), QualityState.INSUFFICIENT_DATA, getFeatureVersion(), ts, "Not in WARM_IDLE");
         }
 
         List<SensorReading> readings = buffer.getReadings("engine_rpm", ts, 10000L); // 10s window
-        if (readings.size() < 10) { // require enough samples for a valid variance
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
+        if (readings.size() < 10) { 
+            return AnalyticalObservation.unavailable(getFeatureId(), QualityState.INSUFFICIENT_DATA, getFeatureVersion(), ts, "Not enough samples");
         }
 
         double sum = 0;
@@ -55,6 +56,7 @@ public class IdleRpmStabilityFeature implements Feature {
         }
         double variance = sqDiffSum / readings.size();
 
-        return new FeatureValue(getFeatureId(), variance, FeatureStatus.AVAILABLE, List.of("MULTI-OBS-" + ts), ts, getUnits(), getFeatureVersion(), "samples=" + readings.size());
+        return new AnalyticalObservation(getFeatureId(), variance, getUnits(), ts, QualityState.AVAILABLE, 
+                List.of("MULTI-OBS-" + ts), cv, getFeatureVersion(), "uncertainty unavailable", "samples=" + readings.size());
     }
 }

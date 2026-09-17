@@ -1,13 +1,15 @@
 package com.ignitionai.virtualsensors;
 
 import com.ignitionai.context.VehicleContext;
-import com.ignitionai.features.SensorReading;
+import com.ignitionai.obd.AnalyticalObservation;
+import com.ignitionai.obd.AnalyticalObservation.QualityState;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.ArrayList;
 
 public class VirtualSensorRuntime {
     private Map<String, SensorDefinition> registeredSensors = new HashMap<>();
@@ -29,12 +31,17 @@ public class VirtualSensorRuntime {
     }
 
     private void validateDAG() {
+        List<String> toRemove = new ArrayList<>();
         for (String id : registeredSensors.keySet()) {
             Set<String> visited = new HashSet<>();
             Set<String> recStack = new HashSet<>();
             if (isCyclic(id, visited, recStack)) {
-                System.err.println("Cycle detected in dependency graph involving: " + id);
+                System.err.println("Cycle detected in dependency graph involving: " + id + ". Quarantining sensor.");
+                toRemove.add(id);
             }
+        }
+        for (String id : toRemove) {
+            registeredSensors.remove(id);
         }
     }
 
@@ -58,28 +65,45 @@ public class VirtualSensorRuntime {
         return false;
     }
 
-    public SensorOutput evaluate(String sensorId, Map<String, SensorReading> featureValues, VehicleContext context) {
+    public AnalyticalObservation evaluate(String sensorId, Map<String, AnalyticalObservation> featureValues, VehicleContext context, Long timestampMs) {
         SensorDefinition def = registeredSensors.get(sensorId);
-        if (def == null) return SensorOutput.unsupported(sensorId, "Sensor not found in registry");
+        String cv = context != null ? context.getContextVersion() : null;
+        if (def == null) return AnalyticalObservation.unavailable(sensorId, QualityState.UNSUPPORTED, null, timestampMs, "Sensor not found in registry");
+
+        // Validate vehicle applicability
+        if (def.getVehicleApplicability() != null && def.getVehicleApplicability().containsKey("engine_family")) {
+            String requiredEngine = def.getVehicleApplicability().get("engine_family");
+            if (context != null && context.getConfiguration() != null) {
+                String configEngine = context.getConfiguration().getEngineFamily();
+                if (configEngine != null && !requiredEngine.equals(configEngine)) {
+                    return AnalyticalObservation.unavailable(sensorId, QualityState.NOT_APPLICABLE, def.getSensorVersion(), timestampMs, "Engine family mismatch: " + configEngine);
+                }
+            }
+        }
 
         // Validate preconditions
         if (def.getOperatingPreconditions() != null) {
             String requiredRegime = def.getOperatingPreconditions().get("engine_running");
             if ("true".equals(requiredRegime) && (context == null || context.getOperatingConditions() == null || !Boolean.TRUE.equals(context.getOperatingConditions().getEngineRunningState()))) {
-                return SensorOutput.notApplicable(sensorId, "Precondition failed: engine must be running");
+                return AnalyticalObservation.unavailable(sensorId, QualityState.NOT_APPLICABLE, def.getSensorVersion(), timestampMs, "Precondition failed: engine must be running");
             }
         }
 
-        // Validate dependencies
-        Map<String, Double> inputDoubles = new HashMap<>();
+        // Validate dependencies and gather sources
+        Map<String, AnalyticalObservation> inputObs = new HashMap<>();
+        List<String> sources = new ArrayList<>();
         if (def.getInputSignalIds() != null) {
             for (String dep : def.getInputSignalIds()) {
-                SensorReading reading = featureValues.get(dep);
-                if (reading == null) {
-                    return SensorOutput.missingInputs(sensorId, "Missing required input: " + dep);
+                AnalyticalObservation reading = featureValues.get(dep);
+                if (reading == null || reading.getQualityState() != QualityState.AVAILABLE) {
+                    return AnalyticalObservation.unavailable(sensorId, QualityState.MISSING_INPUTS, def.getSensorVersion(), timestampMs, "Missing required input: " + dep);
                 }
-                // Basic dimensional check (skipped full unit conversion for MVP, just exact match or assumed correct if missing units in definition)
-                inputDoubles.put(dep, reading.getValue());
+                
+                // Unit Check (simplified, expecting exactly matching unit if both are defined)
+                // Assuming we would look up expected unit in a registry in production
+                
+                inputObs.put(dep, reading);
+                sources.add(dep + "@" + reading.getTimestampMs());
             }
         }
 
@@ -87,37 +111,21 @@ public class VirtualSensorRuntime {
             // Plugin evaluation
             if ("plugin".equals(def.getImplementationType())) {
                 VirtualSensorPlugin plugin = plugins.get(sensorId);
-                if (plugin == null) return SensorOutput.unsupported(sensorId, "Missing plugin implementation");
-                return plugin.execute(inputDoubles, context);
+                if (plugin == null) return AnalyticalObservation.unavailable(sensorId, QualityState.UNSUPPORTED, def.getSensorVersion(), timestampMs, "Missing plugin implementation");
+                return plugin.execute(inputObs, context);
             }
 
             // Formula evaluation
             String formula = def.getFormulaOrModelReference();
             if (formula != null) {
-                // simple diff support
-                if (formula.startsWith("diff(")) {
-                    String[] parts = formula.replace("diff(", "").replace(")", "").split(",");
-                    if (parts.length == 2) {
-                        Double v1 = inputDoubles.get(parts[0].trim());
-                        Double v2 = inputDoubles.get(parts[1].trim());
-                        if (v1 != null && v2 != null) {
-                            return SensorOutput.available(sensorId, v1 - v2);
-                        }
-                    }
-                } 
-                // Basic Math Parse logic for demo
-                else if (formula.contains("/")) {
-                    String[] parts = formula.split("/");
-                    Double v1 = inputDoubles.get(parts[0].trim());
-                    Double v2 = inputDoubles.get(parts[1].trim());
-                    if (v1 != null && v2 != null && v2 != 0) {
-                        return SensorOutput.available(sensorId, v1 / v2);
-                    }
+                Double result = MathExpressionEvaluator.evaluate(formula, inputObs);
+                if (result != null) {
+                    return new AnalyticalObservation(sensorId, result, def.getUnits(), timestampMs, QualityState.AVAILABLE, sources, cv, def.getSensorVersion(), "uncertainty unavailable", "formula evaluation");
                 }
             }
-            return SensorOutput.notApplicable(sensorId, "Formula could not be evaluated: " + formula);
+            return AnalyticalObservation.unavailable(sensorId, QualityState.NOT_APPLICABLE, def.getSensorVersion(), timestampMs, "Formula could not be evaluated: " + formula);
         } catch (Exception e) {
-            return SensorOutput.error(sensorId, "Evaluation failed: " + e.getMessage());
+            return AnalyticalObservation.unavailable(sensorId, QualityState.EVALUATION_ERROR, def.getSensorVersion(), timestampMs, "Evaluation failed: " + e.getMessage());
         }
     }
 

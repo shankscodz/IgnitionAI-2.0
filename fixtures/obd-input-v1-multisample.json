@@ -1,0 +1,56 @@
+{
+  "schema_version": "obd-input.v1",
+  "message_id": "msg-002",
+  "session_id": "ses-002",
+  "sequence": 1,
+  "message_type": "telemetry",
+  "source_type": "simulation",
+  "emitted_at": "2026-09-17T12:00:00Z",
+  "received_at": "2026-09-17T12:00:01Z",
+  "vehicle_ref": {
+    "vehicle_id": "VIN_MULTISAMPLE_01",
+    "vin": "MAT00000000000001",
+    "identity_status": "verified"
+  },
+  "sensor_readings": [
+    { "signal_id": "engine_rpm", "value": 800.0, "unit": "rpm", "monotonic_ms": 1000, "quality": { "status": "valid" } },
+    { "signal_id": "vehicle_speed_kph", "value": 0.0, "unit": "kph", "monotonic_ms": 1000, "quality": { "status": "valid" } },
+    { "signal_id": "engine_coolant_temperature", "value": 50.0, "unit": "degC", "monotonic_ms": 1000, "quality": { "status": "valid" } },
+    { "signal_id": "ambient_air_temperature", "value": 25.0, "unit": "degC", "monotonic_ms": 1000, "quality": { "status": "valid" } },
+    { "signal_id": "control_module_voltage", "value": 14.1, "unit": "V", "monotonic_ms": 1000, "quality": { "status": "valid" } },
+    { "signal_id": "long_term_fuel_trim_bank1", "value": 2.1, "unit": "%", "monotonic_ms": 1000, "quality": { "status": "valid" } },
+    { "signal_id": "short_term_fuel_trim_bank1", "value": -1.0, "unit": "%", "monotonic_ms": 1000, "quality": { "status": "valid" } },
+    
+    { "signal_id": "engine_rpm", "value": 810.0, "unit": "rpm", "monotonic_ms": 2000, "quality": { "status": "valid" } },
+    { "signal_id": "vehicle_speed_kph", "value": 0.0, "unit": "kph", "monotonic_ms": 2000, "quality": { "status": "valid" } },
+    { "signal_id": "engine_coolant_temperature", "value": 51.0, "unit": "degC", "monotonic_ms": 2000, "quality": { "status": "valid" } },
+    { "signal_id": "ambient_air_temperature", "value": 25.0, "unit": "degC", "monotonic_ms": 2000, "quality": { "status": "valid" } },
+    { "signal_id": "control_module_voltage", "value": 14.2, "unit": "V", "monotonic_ms": 2000, "quality": { "status": "valid" } },
+    { "signal_id": "long_term_fuel_trim_bank1", "value": 2.1, "unit": "%", "monotonic_ms": 2000, "quality": { "status": "valid" } },
+    { "signal_id": "short_term_fuel_trim_bank1", "value": -0.5, "unit": "%", "monotonic_ms": 2000, "quality": { "status": "valid" } },
+
+    { "signal_id": "engine_rpm", "value": 790.0, "unit": "rpm", "monotonic_ms": 3000, "quality": { "status": "valid" } },
+    { "signal_id": "vehicle_speed_kph", "value": 0.0, "unit": "kph", "monotonic_ms": 3000, "quality": { "status": "valid" } },
+    { "signal_id": "engine_coolant_temperature", "value": 52.0, "unit": "degC", "monotonic_ms": 3000, "quality": { "status": "valid" } },
+    { "signal_id": "ambient_air_temperature", "value": 25.0, "unit": "degC", "monotonic_ms": 3000, "quality": { "status": "valid" } },
+    { "signal_id": "control_module_voltage", "value": 14.1, "unit": "V", "monotonic_ms": 3000, "quality": { "status": "valid" } },
+    { "signal_id": "long_term_fuel_trim_bank1", "value": 2.1, "unit": "%", "monotonic_ms": 3000, "quality": { "status": "valid" } },
+    { "signal_id": "short_term_fuel_trim_bank1", "value": -0.8, "unit": "%", "monotonic_ms": 3000, "quality": { "status": "valid" } },
+    
+    { "signal_id": "engine_rpm", "value": 805.0, "unit": "rpm", "monotonic_ms": 4000, "quality": { "status": "valid" } },
+    { "signal_id": "vehicle_speed_kph", "value": 0.0, "unit": "kph", "monotonic_ms": 4000, "quality": { "status": "valid" } },
+    { "signal_id": "engine_coolant_temperature", "value": 53.0, "unit": "degC", "monotonic_ms": 4000, "quality": { "status": "valid" } },
+    { "signal_id": "ambient_air_temperature", "value": 25.0, "unit": "degC", "monotonic_ms": 4000, "quality": { "status": "valid" } },
+    { "signal_id": "control_module_voltage", "value": 14.1, "unit": "V", "monotonic_ms": 4000, "quality": { "status": "valid" } },
+    { "signal_id": "long_term_fuel_trim_bank1", "value": 2.1, "unit": "%", "monotonic_ms": 4000, "quality": { "status": "valid" } },
+    { "signal_id": "short_term_fuel_trim_bank1", "value": -1.2, "unit": "%", "monotonic_ms": 4000, "quality": { "status": "valid" } },
+    
+    { "signal_id": "engine_rpm", "value": 800.0, "unit": "rpm", "monotonic_ms": 5000, "quality": { "status": "valid" } },
+    { "signal_id": "vehicle_speed_kph", "value": 10.0, "unit": "kph", "monotonic_ms": 5000, "quality": { "status": "valid" } },
+    { "signal_id": "engine_coolant_temperature", "value": 54.0, "unit": "degC", "monotonic_ms": 5000, "quality": { "status": "valid" } },
+    { "signal_id": "ambient_air_temperature", "value": 25.0, "unit": "degC", "monotonic_ms": 5000, "quality": { "status": "valid" } },
+    { "signal_id": "control_module_voltage", "value": 14.1, "unit": "V", "monotonic_ms": 5000, "quality": { "status": "valid" } },
+    { "signal_id": "long_term_fuel_trim_bank1", "value": 2.1, "unit": "%", "monotonic_ms": 5000, "quality": { "status": "valid" } },
+    { "signal_id": "short_term_fuel_trim_bank1", "value": -1.0, "unit": "%", "monotonic_ms": 5000, "quality": { "status": "valid" } }
+  ]
+}

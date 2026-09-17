@@ -2,8 +2,9 @@ package com.ignitionai.virtualsensors;
 
 import java.util.Map;
 import com.ignitionai.context.VehicleContext;
+import com.ignitionai.obd.AnalyticalObservation;
 
 public interface VirtualSensorPlugin {
     String getSensorId();
-    SensorOutput execute(Map<String, Double> inputs, VehicleContext context);
+    AnalyticalObservation execute(Map<String, AnalyticalObservation> inputs, VehicleContext context);
 }
