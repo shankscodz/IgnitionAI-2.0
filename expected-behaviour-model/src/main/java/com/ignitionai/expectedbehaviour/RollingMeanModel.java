@@ -35,10 +35,18 @@ public class RollingMeanModel implements ExpectedBehaviourModelPlugin {
         }
         
         double sum = 0;
+        int count = 0;
         for (SensorReading r : readings) {
-            sum += r.getValue();
+            if (r.getTimestampMs() < observation.getTimestampMs()) {
+                sum += r.getValue();
+                count++;
+            }
         }
         
-        return sum / readings.size();
+        if (count == 0) {
+            return null;
+        }
+        
+        return sum / count;
     }
 }

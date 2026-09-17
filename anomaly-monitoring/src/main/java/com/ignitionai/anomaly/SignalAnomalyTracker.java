@@ -4,6 +4,7 @@ import com.ignitionai.phase4.AnomalyState;
 
 public class SignalAnomalyTracker {
     private final String signalId;
+    private final String sessionId;
     private AnomalyState currentState = AnomalyState.NOMINAL;
     
     private Long lastNominalMs = 0L;
@@ -14,11 +15,13 @@ public class SignalAnomalyTracker {
     private Double lastScore = 0.0;
     private int consecutiveMissing = 0;
 
-    public SignalAnomalyTracker(String signalId) {
+    public SignalAnomalyTracker(String signalId, String sessionId) {
         this.signalId = signalId;
+        this.sessionId = sessionId;
     }
 
     public String getSignalId() { return signalId; }
+    public String getSessionId() { return sessionId; }
     
     public AnomalyState getCurrentState() { return currentState; }
     public void setCurrentState(AnomalyState state) { this.currentState = state; }

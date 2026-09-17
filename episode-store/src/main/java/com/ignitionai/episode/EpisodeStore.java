@@ -14,7 +14,7 @@ public class EpisodeStore {
     private final Map<String, EpisodeRecord> activeEpisodes = new HashMap<>();
 
     public EpisodeRecord getOrCreateActiveEpisode(String vehicleId, String sessionId, String signalId, Long startMs, Double score, AnomalyState state) {
-        String key = vehicleId + "_" + signalId;
+        String key = vehicleId + "_" + sessionId + "_" + signalId;
         if (activeEpisodes.containsKey(key)) {
             return activeEpisodes.get(key);
         }
@@ -27,7 +27,7 @@ public class EpisodeStore {
     public void updateEpisode(EpisodeRecord episode, Double score, AnomalyState state, Long currentMs) {
         episode.update(score, state, currentMs);
         if (state == AnomalyState.CLOSURE || state == AnomalyState.NOMINAL) {
-            activeEpisodes.remove(episode.getVehicleId() + "_" + episode.getSignalId());
+            activeEpisodes.remove(episode.getVehicleId() + "_" + episode.getSessionId() + "_" + episode.getSignalId());
         }
     }
     

@@ -66,4 +66,14 @@ public class Phase4Observation {
     public String getModelVersion() { return modelVersion; }
     public String getConfigurationVersion() { return configurationVersion; }
     public List<String> getEvidenceReferences() { return evidenceReferences; }
+
+    public Phase4Observation withAnomalyResult(Double score, AnomalyState state) {
+        return new Phase4Observation(
+            this.vehicleId, this.sessionId, this.subsystemOrSignalId, this.sourceObservationReferences,
+            this.observedValue, this.expectedValue, this.residual, this.uncertainty,
+            this.normalizedResidual, score, state, this.timestampMs,
+            this.vehicleContextVersion, this.modelVersion, this.configurationVersion,
+            this.evidenceReferences
+        );
+    }
 }

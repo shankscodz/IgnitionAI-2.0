@@ -65,7 +65,7 @@ public class Phase4PipelineRunner {
             
             EpisodeStore episodeStore = new EpisodeStore();
             EvidenceStore evidenceStore = new EvidenceStore();
-            SignalAnomalyTracker tracker = new SignalAnomalyTracker("engine_rpm");
+            SignalAnomalyTracker tracker = new SignalAnomalyTracker("engine_rpm", "ses-1");
             
             Map<String, Double> latestObs = new HashMap<>();
             
@@ -90,10 +90,9 @@ public class Phase4PipelineRunner {
                     
                     // Phase 4 Logic
                     Double expected = expectedModel.calculateExpectedValue(obs, context, buffer);
-                    if (expected == null) expected = value; // fallback for warm-up
                     
                     Double residual = ResidualCalculator.calculateResidual(value, expected);
-                    Double uncertainty = uncertaintyModel.calculateUncertainty(obs, expected, context);
+                    Double uncertainty = expected != null ? uncertaintyModel.calculateUncertainty(obs, expected, context) : null;
                     Double normRes = ResidualCalculator.calculateNormalizedResidual(residual, uncertainty);
                     
                     Phase4Observation p4Obs = new Phase4Observation(
@@ -103,6 +102,7 @@ public class Phase4PipelineRunner {
                     );
                     
                     Double score = detector.evaluate(p4Obs, tracker);
+                    p4Obs = p4Obs.withAnomalyResult(score, tracker.getCurrentState());
                     
                     if (tracker.getCurrentState() != AnomalyState.NOMINAL) {
                         anomaliesDetected++;
@@ -141,7 +141,7 @@ public class Phase4PipelineRunner {
         try {
             System.out.println("Running test_missingDataHandling...");
             AnomalyDetectorPlugin detector = new ThresholdAnomalyDetector(1.0);
-            SignalAnomalyTracker tracker = new SignalAnomalyTracker("test_sig");
+            SignalAnomalyTracker tracker = new SignalAnomalyTracker("test_sig", "ses-1");
             
             Phase4Observation missingObs = new Phase4Observation(
                 "VEH-1", "ses-1", "test_sig", List.of(), null, 100.0, null, 10.0, null, null, null, 1000L,

@@ -1,7 +1,6 @@
 package com.ignitionai.episode;
 
 import com.ignitionai.phase4.AnomalyState;
-import java.util.UUID;
 
 public class EpisodeRecord {
     private final String episodeId;
@@ -14,7 +13,7 @@ public class EpisodeRecord {
     private AnomalyState currentState;
     
     public EpisodeRecord(String vehicleId, String sessionId, String signalId, Long startTimestampMs, Double initialScore, AnomalyState initialState) {
-        this.episodeId = UUID.randomUUID().toString();
+        this.episodeId = vehicleId + "-" + sessionId + "-" + signalId + "-" + startTimestampMs;
         this.vehicleId = vehicleId;
         this.sessionId = sessionId;
         this.signalId = signalId;
