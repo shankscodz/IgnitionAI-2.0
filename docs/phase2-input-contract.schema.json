@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ignitionai:obd-input:v1",
+  "title": "IgnitionAI OBD Input Message v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "message_id",
+    "session_id",
+    "sequence",
+    "message_type",
+    "source_type",
+    "emitted_at",
+    "received_at",
+    "vehicle_ref",
+    "sensor_readings",
+    "dtc_observations",
+    "raw_provenance"
+  ],
+  "properties": {
+    "schema_version": { "const": "obd-input.v1" },
+    "message_id": { "type": "string", "minLength": 1 },
+    "session_id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "message_type": {
+      "type": "string",
+      "enum": ["telemetry", "dtc_snapshot", "capability_snapshot", "session_started", "session_ended", "connection_event"]
+    },
+    "source_type": { "type": "string", "enum": ["simulation", "replay", "vehicle"] },
+    "emitted_at": { "type": "string", "format": "date-time" },
+    "received_at": { "type": "string", "format": "date-time" },
+    "vehicle_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vehicle_id", "identity_status"],
+      "properties": {
+        "vehicle_id": { "type": "string", "minLength": 1 },
+        "vin": { "type": ["string", "null"] },
+        "identity_status": { "type": "string", "enum": ["verified", "partial", "unknown"] }
+      }
+    },
+    "sensor_readings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SensorReading" }
+    },
+    "dtc_observations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/DtcObservation" }
+    },
+    "capability_snapshot": {
+      "anyOf": [
+        { "$ref": "#/$defs/CapabilitySnapshot" },
+        { "type": "null" }
+      ]
+    },
+    "raw_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter_id", "adapter_version", "raw_record_ref"],
+      "properties": {
+        "adapter_id": { "type": "string", "minLength": 1 },
+        "adapter_version": { "type": "string", "minLength": 1 },
+        "raw_record_ref": { "type": "string", "minLength": 1 },
+        "simulation_seed": { "type": ["integer", "null"] }
+      }
+    }
+  },
+  "$defs": {
+    "SensorReading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signal_id", "value", "unit", "measured_at", "measurement_time_basis", "monotonic_ms", "received_at", "quality", "provenance"],
+      "properties": {
+        "signal_id": { "type": "string", "minLength": 1 },
+        "pid_or_did": { "type": ["string", "null"] },
+        "ecu_id": { "type": ["string", "null"] },
+        "value": { "type": "number" },
+        "unit": { "type": "string", "minLength": 1 },
+        "measured_at": { "type": ["string", "null"], "format": "date-time" },
+        "measurement_time_basis": { "type": "string", "enum": ["ecu", "adapter", "phone_receive", "simulation", "unknown"] },
+        "monotonic_ms": { "type": "integer", "minimum": 0 },
+        "received_at": { "type": "string", "format": "date-time" },
+        "quality": { "$ref": "#/$defs/Quality" },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["response_reference"],
+          "properties": {
+            "request_service": { "type": ["string", "null"] },
+            "response_reference": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "Quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "interpolated"],
+      "properties": {
+        "status": { "type": "string", "enum": ["valid", "invalid", "missing", "stale", "out_of_range", "communication_error", "unsupported"] },
+        "raw_quality": { "type": ["string", "null"] },
+        "age_ms": { "type": ["integer", "null"], "minimum": 0 },
+        "interpolated": { "const": false }
+      }
+    },
+    "DtcObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "status", "observation_type", "observed_at", "monotonic_ms", "provenance"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "ecu_id": { "type": ["string", "null"] },
+        "status": { "type": "string", "enum": ["confirmed", "pending", "permanent", "history", "cleared", "unknown"] },
+        "observation_type": { "type": "string", "enum": ["snapshot", "added", "cleared", "updated", "freeze_frame"] },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "monotonic_ms": { "type": "integer", "minimum": 0 },
+        "first_seen_at": { "type": ["string", "null"], "format": "date-time" },
+        "last_seen_at": { "type": ["string", "null"], "format": "date-time" },
+        "occurrence_count": { "type": ["integer", "null"], "minimum": 0 },
+        "freeze_frame_ref": { "type": ["string", "null"] },
+        "raw_status_byte": { "type": ["integer", "null"], "minimum": 0, "maximum": 255 },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["service", "response_reference"],
+          "properties": {
+            "service": { "type": "string", "minLength": 1 },
+            "response_reference": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "CapabilitySnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported_signals", "supported_dtc_services", "ecu_ids", "capability_source", "observed_at"],
+      "properties": {
+        "supported_signals": { "type": "array", "items": { "type": "string" } },
+        "supported_dtc_services": { "type": "array", "items": { "type": "string" } },
+        "ecu_ids": { "type": "array", "items": { "type": "string" } },
+        "requested_rate_hz": { "type": "object", "additionalProperties": { "type": "number", "exclusiveMinimum": 0 } },
+        "observed_rate_hz": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "capability_source": { "type": "string", "enum": ["vehicle_query", "adapter_config", "simulation_config", "unknown"] },
+        "observed_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

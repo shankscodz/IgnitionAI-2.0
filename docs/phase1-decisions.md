@@ -10,10 +10,12 @@ All AI-proposed values must be confirmed by Shashank before being treated as est
 | Field | Value |
 |---|---|
 | **Decision** | Initial vehicle family |
-| **Proposed** | VW EA888 Gen3 petrol (2013–2020) |
-| **Status** | ⚠️ PENDING — Shashank to confirm |
+| **Proposed** | Tata Nexon Creative Plus, 1.2L turbo petrol |
+| **Status** | ✅ CONFIRMED at product-scope level; exact model year, engine code and market remain to be recorded from the vehicle |
 | **Impact** | Governs VehicleScope in source ingestion and VehicleApplicabilityEntry in linked registries |
 | **Date** | 2026-09-17 |
+
+The earlier VW EA888 Gen3 proposal is superseded by the Tata Nexon target. VW/Audi documents remain useful only as research fixtures unless their applicability to Tata is explicitly established.
 
 ---
 
@@ -95,6 +97,80 @@ All AI-proposed values must be confirmed by Shashank before being treated as est
 | **Decision** | Are CHECKED facts publishable to the registry? |
 | **Chosen** | No — CHECKED means "passed automated checks". Human review (REVIEWED status) is required before publication |
 | **Rationale** | Per the action plan: "Passing automated checks is not equivalent to technician review." |
+| **Date** | 2026-09-17 |
+
+---
+
+## D-009 — Initial vehicle for Phase 2
+
+| Field | Value |
+|---|---|
+| **Decision** | First vehicle target |
+| **Chosen** | Tata Nexon Creative Plus, 1.2L turbo petrol |
+| **Status** | ✅ CONFIRMED at product-scope level; exact model year, engine code and market remain to be recorded from the vehicle |
+| **Impact** | Phase 2 adapter fixtures, capability probing and vehicle applicability metadata |
+| **Date** | 2026-09-17 |
+
+---
+
+## D-010 — Phase 2 first transport
+
+| Field | Value |
+|---|---|
+| **Decision** | Initial vehicle connection |
+| **Chosen** | Bluetooth OBD adapter |
+| **Status** | ✅ CONFIRMED as transport; exact adapter chipset/model remains to be recorded |
+| **Impact** | Bluetooth adapter implementation and phone-side capture |
+| **Date** | 2026-09-17 |
+
+---
+
+## D-011 — Minimum capture profile
+
+| Field | Value |
+|---|---|
+| **Decision** | Minimum signals for an accepted Phase 2 inspection |
+| **Chosen** | Engine RPM, vehicle speed, coolant temperature, calculated engine load and throttle position, subject to actual vehicle capability probing. A current-DTC scan must also be attempted. |
+| **Status** | ✅ POLICY FROZEN; vehicle support remains an empirical capability result |
+| **Rationale** | Conservative common baseline for an OBD inspection; no claim is made that every BS4+ vehicle exposes every signal. Missing signals produce limited coverage, not invented values. |
+| **Impact** | Session acceptance and certificate coverage status |
+| **Date** | 2026-09-17 |
+
+---
+
+## D-012 — Phase 2 data retention
+
+| Field | Value |
+|---|---|
+| **Decision** | Initial retention location and policy |
+| **Chosen** | Phone-local encrypted storage. Raw capture: 90 days. Normalized/derived evidence and certificate snapshots: 12 months, unless the user deletes them earlier. |
+| **Status** | ✅ MVP POLICY FROZEN; cloud migration will introduce a new storage policy/version |
+| **Impact** | Capture storage, export, deletion and privacy behaviour |
+| **Date** | 2026-09-17 |
+
+---
+
+## D-013 — Time policy for Bluetooth capture
+
+| Field | Value |
+|---|---|
+| **Decision** | Measurement time when ECU timestamp is unavailable |
+| **Chosen** | Phone monotonic elapsed time is the ordering clock; phone UTC receive time is retained; ECU measurement time is nullable and never fabricated. |
+| **Status** | ✅ CONFIRMED |
+| **Impact** | Sampling, alignment, latency and episode calculations |
+| **Date** | 2026-09-17 |
+
+---
+
+## D-014 — Enhanced manufacturer-specific PIDs
+
+| Field | Value |
+|---|---|
+| **Decision** | Include enhanced/manufacturer-specific PIDs in Phase 2 v1? |
+|---|---|
+| **Chosen** | No. Phase 2 v1 uses the generic OBD contract and supported standard identifiers only. |
+| **Status** | ✅ CONFIRMED |
+| **Impact** | Adapter scope and signal catalogue; enhanced signals may be added in a versioned extension later |
 | **Date** | 2026-09-17 |
 
 ---

@@ -35,6 +35,8 @@
         "observationId":              { "type": "string", "description": "Stable ID, e.g. OBS-COOLANT-TEMP" },
         "name":                       { "type": "string" },
         "measurementType":            { "type": "string", "enum": ["MEASURED", "COMPUTED"] },
+        "observationKind":            { "type": "string", "enum": ["MEASURED", "DERIVED", "MODEL_DERIVED"] },
+        "canonicalSignalId":          { "type": "string", "description": "Stable telemetry/feature identifier" },
         "unit":                       { "type": "string", "description": "Must be in known unit registry" },
         "definition":                 { "type": ["string", "null"] },
         "operatingConditions":        { "type": ["string", "null"] },
@@ -42,6 +44,12 @@
         "normalLimitUpper":           { "type": ["number", "null"] },
         "vehicleApplicabilityEntryId": { "type": ["string", "null"], "description": "Cross-registry reference" },
         "pidOrDid":                   { "type": ["string", "null"] },
+        "inputObservationIds":        { "type": "array", "items": { "type": "string" } },
+        "formulaOrModelReference":    { "type": ["string", "null"] },
+        "availabilityStatus":         { "type": "string", "enum": ["REQUIRED", "OPTIONAL", "UNSUPPORTED", "UNKNOWN"] },
+        "samplingRequirements":        { "type": ["string", "null"] },
+        "uncertaintyDefinition":      { "type": ["string", "null"] },
+        "applicabilityConstraints":   { "type": ["string", "null"] },
         "sourceFactIds":              { "type": "array", "items": { "type": "string" } },
         "sourcePassageIds":           { "type": "array", "items": { "type": "string" } }
       }
