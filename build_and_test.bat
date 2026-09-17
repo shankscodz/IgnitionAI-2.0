@@ -69,6 +69,11 @@ java -ea -cp out tools.pipeline_runner.Phase3ToPhase4ContractTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
+echo [TEST] Phase 4 End-to-End Tests
+java -ea -cp out tools.pipeline_runner.Phase4PipelineRunner
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
 echo [TEST] Phase 2 to Phase 3 End-to-End Integration
 java -ea -cp out tools.pipeline_runner.Phase2ToPhase3IntegrationTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
