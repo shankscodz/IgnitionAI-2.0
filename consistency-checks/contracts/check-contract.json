@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ignitionai:consistency-checks:v1",
+  "title": "Consistency Checks Output Contract",
+  "type": "object",
+  "anyOf": [
+    { "$ref": "#/definitions/CheckResult" }
+  ],
+  "definitions": {
+    "CheckDecision": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "REJECT", "QUARANTINE"],
+      "description": "PASS/WARN = CHECKED status. REJECT = structural failure. QUARANTINE = conflict with another fact — never averaged."
+    },
+    "CheckResult": {
+      "type": "object",
+      "required": ["factId", "sourceId", "passageId", "decision", "humanExplanation"],
+      "properties": {
+        "factId":           { "type": "string" },
+        "sourceId":         { "type": "string" },
+        "passageId":        { "type": "string" },
+        "decision":         { "$ref": "#/definitions/CheckDecision" },
+        "rejectionCodes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Machine-readable codes. Examples: MISSING_UNIT, THRESHOLD_CONFLICT, IMPLAUSIBLE_RANGE, INVALID_SOURCE_REFERENCE"
+        },
+        "humanExplanation":  { "type": "string" },
+        "conflictingFactIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Populated only for QUARANTINE decisions. IDs of conflicting facts."
+        }
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "FieldValidator",
+      "codes": ["MISSING_REQUIRED_FIELD", "INVALID_NUMERIC_VALUE", "MISSING_UNIT", "UNRECOGNIZED_UNIT", "MISSING_EXTRACTOR_VERSION"]
+    },
+    {
+      "name": "ReferenceValidator",
+      "codes": ["INVALID_SOURCE_REFERENCE", "INCONSISTENT_PASSAGE_REF", "INVALID_VEHICLE_APPLICABILITY"]
+    },
+    {
+      "name": "PlausibilityChecker",
+      "codes": ["IMPLAUSIBLE_RANGE", "IMPLAUSIBLE_RANGE_WARNING"]
+    },
+    {
+      "name": "ThresholdConflictDetector",
+      "codes": ["THRESHOLD_CONFLICT"],
+      "note": "QUARANTINE decision — conflicting facts are preserved, never averaged or discarded"
+    }
+  ],
+  "statusTransitions": {
+    "CANDIDATE → CHECKED":     "All checks PASS or WARN",
+    "CANDIDATE → REJECTED":    "Any check returns REJECT",
+    "CANDIDATE → QUARANTINED": "ThresholdConflictDetector returns QUARANTINE",
+    "NOTE": "CHECKED ≠ PUBLISHED. Human review (REVIEWED status) is required before publication."
+  }
+}

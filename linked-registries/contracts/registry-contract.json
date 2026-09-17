@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ignitionai:linked-registries:v1",
+  "title": "Linked Registries Output Contract",
+  "type": "object",
+  "anyOf": [
+    { "$ref": "#/definitions/RegistryRelease" },
+    { "$ref": "#/definitions/VehicleApplicabilityEntry" },
+    { "$ref": "#/definitions/FaultKnowledgeEntry" },
+    { "$ref": "#/definitions/ActionEntry" },
+    { "$ref": "#/definitions/ObservationEntry" }
+  ],
+  "definitions": {
+    "VehicleApplicabilityEntry": {
+      "type": "object",
+      "required": ["entryId", "configurationName"],
+      "properties": {
+        "entryId":            { "type": "string" },
+        "configurationName":  { "type": "string" },
+        "manufacturer":       { "type": ["string", "null"] },
+        "engineFamily":       { "type": ["string", "null"] },
+        "fuelType":           { "type": ["string", "null"] },
+        "modelYearFrom":      { "type": ["integer", "null"] },
+        "modelYearTo":        { "type": ["integer", "null"] },
+        "markets":            { "type": ["array", "null"], "items": { "type": "string" } },
+        "compatibilityNotes": { "type": ["string", "null"] },
+        "sourceFactIds":      { "type": "array", "items": { "type": "string" } },
+        "sourcePassageIds":   { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "ObservationEntry": {
+      "type": "object",
+      "required": ["observationId", "name", "measurementType", "unit"],
+      "properties": {
+        "observationId":              { "type": "string", "description": "Stable ID, e.g. OBS-COOLANT-TEMP" },
+        "name":                       { "type": "string" },
+        "measurementType":            { "type": "string", "enum": ["MEASURED", "COMPUTED"] },
+        "unit":                       { "type": "string", "description": "Must be in known unit registry" },
+        "definition":                 { "type": ["string", "null"] },
+        "operatingConditions":        { "type": ["string", "null"] },
+        "normalLimitLower":           { "type": ["number", "null"] },
+        "normalLimitUpper":           { "type": ["number", "null"] },
+        "vehicleApplicabilityEntryId": { "type": ["string", "null"], "description": "Cross-registry reference" },
+        "pidOrDid":                   { "type": ["string", "null"] },
+        "sourceFactIds":              { "type": "array", "items": { "type": "string" } },
+        "sourcePassageIds":           { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "FaultKnowledgeEntry": {
+      "type": "object",
+      "required": ["entryId", "faultName"],
+      "properties": {
+        "entryId":                    { "type": "string" },
+        "faultName":                  { "type": "string" },
+        "faultCode":                  { "type": ["string", "null"] },
+        "vehicleApplicabilityEntryId": { "type": ["string", "null"], "description": "Cross-registry reference to VehicleApplicability" },
+        "symptoms":                   { "type": "array", "items": { "type": "string" } },
+        "relevantObservationIds":     { "type": "array", "items": { "type": "string" }, "description": "Cross-registry references to ObservationRegistry" },
+        "conditions":                 { "type": ["string", "null"] },
+        "description":                { "type": ["string", "null"] },
+        "sourceFactIds":              { "type": "array", "items": { "type": "string" } },
+        "sourcePassageIds":           { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "ActionEntry": {
+      "type": "object",
+      "required": ["entryId", "actionName"],
+      "properties": {
+        "entryId":                    { "type": "string" },
+        "actionName":                 { "type": "string" },
+        "category":                   { "type": ["string", "null"], "enum": ["DIAGNOSTIC", "REPAIR", "CALIBRATION", "INSPECTION", "RESET", null] },
+        "vehicleApplicabilityEntryId": { "type": ["string", "null"] },
+        "preconditions":              { "type": "array", "items": { "type": "string" } },
+        "requiredTools":              { "type": "array", "items": { "type": "string" } },
+        "relatedObservationIds":      { "type": "array", "items": { "type": "string" } },
+        "expectedOutcomes":           { "type": "array", "items": { "type": "string" } },
+        "sourcedTimeEstimate":        { "type": ["string", "null"], "description": "Only populated when source document provides a time estimate — never invented" },
+        "sourceFactIds":              { "type": "array", "items": { "type": "string" } },
+        "sourcePassageIds":           { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "RegistryRelease": {
+      "type": "object",
+      "required": ["releaseId", "createdAt", "status"],
+      "properties": {
+        "releaseId":                   { "type": "string", "description": "Format: REL-YYYYMMDD-NNN" },
+        "description":                 { "type": ["string", "null"] },
+        "createdAt":                   { "type": "string", "format": "date-time" },
+        "vehicleFamily":               { "type": ["string", "null"] },
+        "status":                      { "type": "string", "enum": ["DRAFT", "PUBLISHED"] },
+        "vehicleApplicabilityEntries": { "type": "array", "items": { "$ref": "#/definitions/VehicleApplicabilityEntry" } },
+        "faultKnowledgeEntries":       { "type": "array", "items": { "$ref": "#/definitions/FaultKnowledgeEntry" } },
+        "actionEntries":               { "type": "array", "items": { "$ref": "#/definitions/ActionEntry" } },
+        "observationEntries":          { "type": "array", "items": { "$ref": "#/definitions/ObservationEntry" } }
+      }
+    }
+  },
+  "invariants": [
+    "An incompatible vehicle MUST NOT receive any registry entry",
+    "All analytical sessions MUST pin to a specific releaseId",
+    "Cross-registry references (observationId, vehicleApplicabilityEntryId) must resolve within the same release",
+    "Draft entries are separate from published releases",
+    "Released snapshots are immutable — knowledge edits create a new release"
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ignitionai:fact-extraction:v1",
+  "title": "Fact Extraction Output Contract",
+  "description": "Candidate facts produced by the fact-extraction module. All facts are CANDIDATE status and must pass through consistency-checks before registry publication. Facts are never used directly as runtime rules.",
+  "type": "object",
+  "anyOf": [
+    { "$ref": "#/definitions/ExtractionResult" },
+    { "$ref": "#/definitions/CandidateFact" }
+  ],
+  "definitions": {
+    "FactType": {
+      "type": "string",
+      "enum": [
+        "VEHICLE_APPLICABILITY", "SYMPTOM_FAULT", "DIAGNOSTIC_PRECONDITION",
+        "ACTION", "TOOL_REQUIREMENT", "THRESHOLD", "EXPECTED_OBSERVATION"
+      ]
+    },
+    "FactStatus": {
+      "type": "string",
+      "enum": ["CANDIDATE", "CHECKED", "REVIEWED", "PUBLISHED", "REJECTED", "QUARANTINED"]
+    },
+    "CandidateFact": {
+      "type": "object",
+      "required": ["factId", "factType", "sourceId", "passageId", "supportingPassageText", "extractorVersion", "status"],
+      "properties": {
+        "factId":                { "type": "string" },
+        "factType":              { "$ref": "#/definitions/FactType" },
+        "sourceId":              { "type": "string" },
+        "passageId":             { "type": "string" },
+        "supportingPassageText": { "type": "string", "minLength": 1 },
+        "vehicleApplicability":  { "type": ["string", "null"], "description": "Null means undetermined, not universal" },
+        "operatingConditions":   { "type": ["string", "null"] },
+        "inputs":                { "type": ["object", "null"], "additionalProperties": { "type": "string" } },
+        "outputs":               { "type": ["object", "null"], "additionalProperties": { "type": "string" } },
+        "sourceSpan":            { "type": ["string", "null"] },
+        
+        "quantityId":            { "type": ["string", "null"] },
+        "originalQuantityText":  { "type": ["string", "null"] },
+        "comparisonOperator":    { "type": ["string", "null"] },
+        "thresholdRole":         { "type": ["string", "null"] },
+        "conditionExpression":   { "type": ["string", "null"] },
+        "duration":              { "type": ["string", "null"] },
+        
+        "thresholdLower":        { "type": ["number", "null"], "description": "Required only for THRESHOLD facts" },
+        "thresholdUpper":        { "type": ["number", "null"], "description": "Required only for THRESHOLD facts" },
+        "unit": {
+          "type": ["string", "null"],
+          "description": "REQUIRED for THRESHOLD and EXPECTED_OBSERVATION facts. A threshold without a unit is invalid."
+        },
+        
+        "symptomDescription":  { "type": ["string", "null"] },
+        "faultDescription":    { "type": ["string", "null"] },
+        
+        "actionDescription":   { "type": ["string", "null"] },
+        "actionPolarity":      { "type": ["string", "null"] },
+        "preconditions":       { "type": ["array", "null"], "items": { "type": "string" } },
+        "estimatedTime":       { "type": ["string", "null"] },
+        "extractorVersion":    { "type": "string", "description": "Version of the extractor for reproducibility" },
+        "extractionSettings":  { "type": ["string", "null"] },
+        "extractionConfidence": {
+          "type": ["number", "null"],
+          "minimum": 0.0, "maximum": 1.0,
+          "description": "Extractor confidence; SEPARATE from source authority"
+        },
+        "status": { "$ref": "#/definitions/FactStatus" }
+      }
+    },
+    "ExtractionResult": {
+      "type": "object",
+      "required": ["outcome", "passageId", "sourceId", "explanation"],
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": ["FACTS_EXTRACTED", "NO_FACTS_FOUND", "EXTRACTION_FAILED", "INSUFFICIENT_CONTENT"]
+        },
+        "passageId":   { "type": "string" },
+        "sourceId":    { "type": "string" },
+        "facts":       { "type": "array", "items": { "$ref": "#/definitions/CandidateFact" } },
+        "explanation": { "type": "string" },
+        "failureCode": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

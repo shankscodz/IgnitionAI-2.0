@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ignitionai:technical-sources:v1",
+  "title": "TechnicalSource Output Contract",
+  "type": "object",
+  "anyOf": [
+    { "$ref": "#/definitions/TechnicalSource" }
+  ],
+  "definitions": {
+    "IngestionStatus": {
+      "type": "string",
+      "enum": ["PENDING", "INGESTED", "UNREADABLE", "DUPLICATE", "SUPERSEDED"]
+    },
+    "DocumentType": {
+      "type": "string",
+      "enum": [
+        "SERVICE_MANUAL", "TECHNICAL_BULLETIN", "WIRING_DIAGRAM",
+        "PARTS_CATALOGUE", "EMISSIONS_SPECIFICATION", "ENGINEERING_SPECIFICATION",
+        "DIAGNOSTIC_PROCEDURE", "TECHNICAL_TRAINING_MATERIAL", "REGULATORY_DOCUMENT", "OTHER"
+      ]
+    },
+    "VehicleScope": {
+      "type": "object",
+      "description": "All fields are nullable. Null means undetermined — NOT applicable to all vehicles.",
+      "properties": {
+        "manufacturer":      { "type": ["string", "null"] },
+        "modelSeries":       { "type": ["array", "null"], "items": { "type": "string" } },
+        "engineFamilies":    { "type": ["array", "null"], "items": { "type": "string" } },
+        "fuelTypes":         { "type": ["array", "null"], "items": { "type": "string" } },
+        "modelYearFrom":     { "type": ["integer", "null"] },
+        "modelYearTo":       { "type": ["integer", "null"] },
+        "markets":           { "type": ["array", "null"], "items": { "type": "string" } },
+        "applicabilityNote": { "type": ["string", "null"] }
+      }
+    },
+    "Passage": {
+      "type": "object",
+      "required": ["passageId", "sourceId", "text"],
+      "properties": {
+        "passageId":     { "type": "string", "description": "Globally unique, format: {sourceId}#P{seq}" },
+        "sourceId":      { "type": "string" },
+        "pageNumber":    { "type": ["integer", "null"] },
+        "sectionAnchor": { "type": ["string", "null"] },
+        "text":          { "type": "string", "minLength": 1 },
+        "charOffset":    { "type": ["integer", "null"] }
+      }
+    },
+    "TechnicalSource": {
+      "type": "object",
+      "required": ["sourceId", "title", "documentType", "retrievalDate", "documentHash", "ingestionStatus"],
+      "properties": {
+        "sourceId":            { "type": "string" },
+        "title":               { "type": "string" },
+        "publisher":           { "type": ["string", "null"] },
+        "documentType":        { "$ref": "#/definitions/DocumentType" },
+        "originalUrl":         { "type": ["string", "null"] },
+        "fileLocation":        { "type": ["string", "null"] },
+        "publicationDate":     { "type": ["string", "null"], "format": "date" },
+        "revisionDate":        { "type": ["string", "null"], "format": "date" },
+        "retrievalDate":       { "type": "string", "format": "date" },
+        "language":            { "type": ["string", "null"], "description": "ISO 639-1 code" },
+        "documentHash":        { "type": "string", "description": "SHA-256 hex digest" },
+        "accessRestrictions":  { "type": ["string", "null"] },
+        "vehicleScope":        { "$ref": "#/definitions/VehicleScope" },
+        "ingestionStatus":     { "$ref": "#/definitions/IngestionStatus" },
+        "isSynthetic":         { "type": "boolean", "description": "True if synthetic demo/test data" },
+        "predecessorSourceId": { "type": ["string", "null"] },
+        "passages":            { "type": "array", "items": { "$ref": "#/definitions/Passage" } }
+      }
+    },
+    "IngestionResult": {
+      "type": "object",
+      "required": ["outcome", "explanation"],
+      "properties": {
+        "outcome":       { "type": "string", "enum": ["INGESTED", "DUPLICATE", "UNREADABLE", "MISSING_METADATA", "NOT_FOUND"] },
+        "sourceRecord":  { "$ref": "#/definitions/TechnicalSource" },
+        "rejectionCode": { "type": ["string", "null"] },
+        "explanation":   { "type": "string" },
+        "attemptedPath": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
