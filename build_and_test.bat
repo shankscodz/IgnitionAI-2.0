@@ -103,6 +103,11 @@ java -ea -cp out tools.pipeline_runner.LabelledHistoryGenerator
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
+echo [TEST] Phase 6 Pipeline Runner
+java -ea -cp out tools.pipeline_runner.Phase6PipelineRunner
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
 echo ===================================================
 echo ALL TESTS PASSED SUCCESSFULLY!
 echo ===================================================
