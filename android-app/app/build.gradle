@@ -57,6 +57,21 @@ android {
             }
             // Sensor manifests as Android assets
             assets.srcDirs += [new File(repoRoot, 'virtual-sensors/src/main/resources')]
+
+            java {
+                // Exclude test files from all backend modules
+                exclude '**/*Test*.java'
+                exclude '**/Phase6Fixtures.java'
+                // Exclude files that use Java 11 APIs not available on Android API 26
+                // (Files.writeString was added in Java 11 / Android API 30+)
+                exclude '**/LocalFileStorageProvider.java'
+                exclude '**/RegistryQueryService.java'
+                // Exclude Phase7Tests which references missing AssessmentHistoryView
+                exclude '**/Phase7Tests.java'
+                // Exclude Antigravity's layout-based MainActivity (R class conflict)
+                // ChatGPT's programmatic MainActivity takes precedence
+                exclude 'ai/ignition/android/MainActivity.java'
+            }
         }
     }
 }

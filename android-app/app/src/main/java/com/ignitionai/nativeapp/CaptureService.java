@@ -50,7 +50,7 @@ public final class CaptureService extends Service {
         int count = 0;
         try (BufferedWriter records = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(folder, fileName)), StandardCharsets.UTF_8));
              BufferedWriter raw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new File(folder, session + ".raw.jsonl")), StandardCharsets.UTF_8))) {
-            BluetoothAdapter adapter = getSystemService(BluetoothManager.class).getAdapter();
+            android.bluetooth.BluetoothAdapter adapter = getSystemService(BluetoothManager.class).getAdapter();
             if (adapter == null || !adapter.isEnabled()) throw new IOException("Enable Bluetooth before connecting");
             socket = adapter.getRemoteDevice(address).createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
             sendStatus("Connecting…", false); socket.connect(); lastProgress = android.os.SystemClock.elapsedRealtime();

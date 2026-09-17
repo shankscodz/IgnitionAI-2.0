@@ -146,7 +146,8 @@ public final class MainActivity extends Activity {
         });
     }
     private void writePdf(OutputStream output)throws IOException{
-        try(PdfDocument doc=new PdfDocument()){
+        PdfDocument doc=new PdfDocument();
+        try{
             Paint paint=new Paint();paint.setTextSize(11);int pageNo=1,y=45;PdfDocument.Page page=doc.startPage(new PdfDocument.PageInfo.Builder(595,842,pageNo).create());
             for(String line:("IgnitionAI assessment\n"+result.certificate.getCertificateId()+"\n"+report()).split("\n")){
                 do{int count=Math.min(85,line.length());String text=line.substring(0,count);line=line.substring(count);
@@ -155,7 +156,7 @@ public final class MainActivity extends Activity {
                 }while(!line.isEmpty());
             }
             doc.finishPage(page);doc.writeTo(output);
-        }
+        }finally{doc.close();}
     }
     protected void onSaveInstanceState(Bundle state){super.onSaveInstanceState(state);state.putString("vehicle",vehicle.getText().toString());state.putString("scenario",scenario.getText().toString());}
     protected void onDestroy(){destroyed=true;unregisterReceiver(captureReceiver);executor.shutdownNow();super.onDestroy();}
