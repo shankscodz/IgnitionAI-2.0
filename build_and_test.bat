@@ -19,8 +19,7 @@ echo.
 echo ===================================================
 echo Running Tests...
 echo ===================================================
-
-echo [TEST] Technical Sources
+echo [TEST] technical-sources
 java -cp out com.ignitionai.technicalsources.test.TechnicalSourceTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
@@ -37,6 +36,16 @@ if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 echo.
 echo [TEST] Linked Registries
 java -cp out com.ignitionai.linkedregistries.test.LinkedRegistriesTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] OBD Input and Pre-processing
+java -cp out com.ignitionai.obdinput.ObdInputTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] OBD Generator
+java -cp out com.ignitionai.obdgenerator.GeneratorTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.
