@@ -21,8 +21,9 @@ IgnitionAI 2.0/
     └── phase1-decisions.md   Decision log for Phase 1
 ```
 
-Phases 2–7 modules (obd-input-and-pre-processing, vehicle-context, direct-features, virtual-sensors, expected-behaviour-model, residual-and-uncertainty, anomaly-monitoring, episode-and-evidence-store, degradation-state, event-risk, indicator-severity, subsystem-health-scores, vehicle-health-index, certificate-snapshot, latex-certificate-generator, pre-owned-dealership-app) will be added in their respective phases.
+Phases 4–7 modules (expected-behaviour-model, residual-and-uncertainty, anomaly-monitoring, episode-and-evidence-store, degradation-state, event-risk, indicator-severity, subsystem-health-scores, vehicle-health-index, certificate-snapshot, latex-certificate-generator, pre-owned-dealership-app) will be added in their respective phases.
 
+**Phase 3** (`vehicle-context`, `direct-features`, `virtual-sensors`) is completed and compliant with the architecture.
 ## Phase 1 — Knowledge Engineering
 
 See [`docs/phase1-decisions.md`](docs/phase1-decisions.md) for decisions and [`IgnitionAI_Seven_Phase_MVP_Action_Plan.md`](IgnitionAI_Seven_Phase_MVP_Action_Plan.md) for the full plan.
