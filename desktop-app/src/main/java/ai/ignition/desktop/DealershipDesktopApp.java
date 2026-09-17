@@ -6,6 +6,8 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -93,6 +95,14 @@ public class DealershipDesktopApp extends JFrame {
         toolbar.add(loadReplayBtn);
 
         toolbar.add(Box.createHorizontalGlue());
+
+        JButton simBtn = new JButton("Open OBD Simulator");
+        simBtn.setBackground(new Color(102, 16, 242));
+        simBtn.setForeground(Color.WHITE);
+        simBtn.addActionListener(e -> new ai.ignition.simulator.ObdSimulatorApp().setVisible(true));
+        toolbar.add(simBtn);
+
+        toolbar.add(Box.createHorizontalStrut(8));
 
         JButton exportCertBtn = new JButton("Export Health Certificate (PDF)");
         exportCertBtn.setBackground(new Color(24, 115, 204));
@@ -267,12 +277,131 @@ public class DealershipDesktopApp extends JFrame {
 
     private void exportCertificate() {
         JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Save Vehicle Health Certificate");
         chooser.setSelectedFile(new File("Vehicle_Health_Certificate.pdf"));
-        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            JOptionPane.showMessageDialog(this,
-                    "Health Certificate generated successfully:\n" + chooser.getSelectedFile().getAbsolutePath(),
-                    "Certificate Exported", JOptionPane.INFORMATION_MESSAGE);
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+
+        File dest = chooser.getSelectedFile();
+        if (!dest.getName().toLowerCase().endsWith(".pdf")) {
+            dest = new File(dest.getAbsolutePath() + ".pdf");
         }
+
+        try {
+            byte[] pdf = buildPdfBytes();
+            try (FileOutputStream fos = new FileOutputStream(dest)) {
+                fos.write(pdf);
+            }
+            statusLabel.setText("Certificate saved: " + dest.getAbsolutePath());
+            JOptionPane.showMessageDialog(this,
+                    "Health Certificate saved:\n" + dest.getAbsolutePath(),
+                    "Certificate Exported", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to write PDF:\n" + ex.getMessage(),
+                    "Export Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Generates a valid PDF/1.4 document using only the Java standard library.
+     * Encodes vehicle health report content as literal PDF streams.
+     */
+    private byte[] buildPdfBytes() throws IOException {
+        String ts   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        String vhi  = vhiScoreLabel.getText();
+        String sev  = severityBadge.getText();
+        String rpm  = rpmLabel.getText();
+        String spd  = speedLabel.getText();
+        String tmp  = tempLabel.getText();
+        String ld   = loadLabel.getText();
+        String dtc  = dtcLabel.getText();
+        String pt   = powertrainBar.getString();
+        String cl   = coolingBar.getString();
+        String em   = emissionsBar.getString();
+        String el   = electricalBar.getString();
+
+        // Collect anomaly rows
+        StringBuilder anomalies = new StringBuilder();
+        for (int r = 0; r < anomalyTableModel.getRowCount(); r++) {
+            anomalies.append(String.format("  %-10s %-14s %-18s %-10s %-10s %s\n",
+                anomalyTableModel.getValueAt(r, 0),
+                anomalyTableModel.getValueAt(r, 1),
+                anomalyTableModel.getValueAt(r, 2),
+                anomalyTableModel.getValueAt(r, 3),
+                anomalyTableModel.getValueAt(r, 4),
+                anomalyTableModel.getValueAt(r, 5)));
+        }
+        if (anomalies.length() == 0) anomalies.append("  None detected.\n");
+
+        // Build PDF content stream
+        StringBuilder cs = new StringBuilder();
+        cs.append("BT\n");
+        cs.append("/F1 16 Tf\n");
+        cs.append("50 780 Td\n");
+        cs.append("(IgnitionAI 2.0 - Vehicle Health Certificate) Tj\n");
+        cs.append("/F1 10 Tf\n");
+        cs.append("0 -22 Td (Generated: ").append(ts).append(") Tj\n");
+        cs.append("0 -20 Td (---------------------------------------------------) Tj\n");
+        cs.append("0 -20 Td (VIN: 1HGCR2F83HA00291) Tj\n");
+        cs.append("0 -18 Td (Vehicle Health Index: ").append(vhi).append(") Tj\n");
+        cs.append("0 -18 Td (").append(sev).append(") Tj\n");
+        cs.append("0 -24 Td (-- Live Telemetry --) Tj\n");
+        cs.append("0 -18 Td (RPM: ").append(rpm).append("   Speed: ").append(spd).append(") Tj\n");
+        cs.append("0 -18 Td (Coolant: ").append(tmp).append("   Load: ").append(ld).append(") Tj\n");
+        cs.append("0 -18 Td (DTCs: ").append(dtc.replace("(","[").replace(")","]")).append(") Tj\n");
+        cs.append("0 -24 Td (-- Subsystem Health --) Tj\n");
+        cs.append("0 -18 Td (Powertrain: ").append(pt).append("   Cooling: ").append(cl).append(") Tj\n");
+        cs.append("0 -18 Td (Emissions: ").append(em).append("   Electrical: ").append(el).append(") Tj\n");
+        cs.append("0 -24 Td (-- Detected Episodes --) Tj\n");
+        for (String line : anomalies.toString().split("\n")) {
+            String safe = line.replace("(", "[").replace(")", "]");
+            cs.append("0 -16 Td (").append(safe).append(") Tj\n");
+        }
+        cs.append("0 -30 Td (-- END OF REPORT --) Tj\n");
+        cs.append("ET\n");
+
+        byte[] stream = cs.toString().getBytes("ISO-8859-1");
+
+        // Assemble PDF objects
+        StringBuilder pdf = new StringBuilder();
+        pdf.append("%PDF-1.4\n");
+
+        // Object 1: Catalog
+        int[] offsets = new int[6];
+        offsets[0] = pdf.length();
+        pdf.append("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+        // Object 2: Pages
+        offsets[1] = pdf.length();
+        pdf.append("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+
+        // Object 3: Page
+        offsets[2] = pdf.length();
+        pdf.append("3 0 obj\n<< /Type /Page /Parent 2 0 R ");
+        pdf.append("/MediaBox [0 0 595 842] ");
+        pdf.append("/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n");
+
+        // Object 4: Content stream
+        offsets[3] = pdf.length();
+        pdf.append("4 0 obj\n<< /Length ").append(stream.length).append(" >>\nstream\n");
+        pdf.append(cs);
+        pdf.append("endstream\nendobj\n");
+
+        // Object 5: Font
+        offsets[4] = pdf.length();
+        pdf.append("5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n");
+
+        // Cross-reference table
+        int xrefOffset = pdf.length();
+        pdf.append("xref\n0 6\n");
+        pdf.append("0000000000 65535 f \n");
+        for (int i = 0; i < 5; i++) {
+            pdf.append(String.format("%010d 00000 n \n", offsets[i]));
+        }
+        pdf.append("trailer\n<< /Size 6 /Root 1 0 R >>\n");
+        pdf.append("startxref\n").append(xrefOffset).append("\n%%EOF\n");
+
+        return pdf.toString().getBytes("ISO-8859-1");
     }
 
     private void populateSampleHistory() {

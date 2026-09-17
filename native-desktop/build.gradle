@@ -1,0 +1,54 @@
+plugins {
+    id 'application'
+}
+
+mainClassName = 'com.ignitionai.desktop.IgnitionDesktop'
+
+// Use native-core aggregator to pull all Phase 2-6 sources onto classpath
+def modules = [
+    'application', 'anomaly-monitoring', 'certificate-snapshot', 'certificate-validation',
+    'consistency-checks', 'degradation-evidence-store', 'degradation-feature-builder',
+    'degradation-state-estimator', 'direct-features', 'episode-store', 'event-risk-estimator',
+    'evidence-store', 'expected-behaviour-model', 'fact-extraction', 'health-evidence',
+    'latex-certificate-generator', 'linked-registries', 'obd-input-and-pre-processing',
+    'obd-input-contract', 'phase4-contract', 'phase5-contract', 'phase6-contract',
+    'residual-calculation', 'severity-indicator', 'subsystem-health-score', 'technical-sources',
+    'trend-and-persistence-analyzer', 'uncertainty-calculation', 'vehicle-context',
+    'vehicle-health-index', 'virtual-sensors', 'tools/obd-generator'
+]
+
+sourceSets {
+    main {
+        java {
+            // IgnitionDesktop itself
+            srcDirs = ['src/main/java']
+            // All backend modules
+            modules.each { mod ->
+                def srcDir = rootProject.file(mod + '/src/main/java')
+                def altDir  = rootProject.file(mod + '/src')
+                if (srcDir.exists()) srcDirs += srcDir
+                else if (altDir.exists()) srcDirs += altDir
+            }
+            // Exclude test files from backend modules
+            exclude '**/*Test*.java', '**/Phase6Fixtures.java'
+        }
+    }
+    test {
+        java { srcDirs = ['src/test/java'] }
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+run {
+    // Enable GUI on macOS
+    systemProperty 'apple.awt.application.name', 'IgnitionAI'
+}

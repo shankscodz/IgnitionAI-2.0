@@ -5,3 +5,8 @@ source-archive/
 .idea/
 *.iml
 .DS_Store
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore

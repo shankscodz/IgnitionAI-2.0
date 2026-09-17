@@ -43,12 +43,11 @@ if ($Help) {
 # SECTION 1: Windows Desktop App (pure Swing - no external deps)
 # =============================================================================
 function Build-And-Launch-Desktop {
-    Print-Header "Windows Desktop App"
+    Print-Header "Windows Desktop Apps"
 
     # Find javac / java
     $javac = $null
     $java  = $null
-
     if ($env:JAVA_HOME) {
         $javac = Join-Path $env:JAVA_HOME "bin\javac.exe"
         $java  = Join-Path $env:JAVA_HOME "bin\java.exe"
@@ -63,40 +62,75 @@ function Build-And-Launch-Desktop {
         Print-Info "Download: https://adoptium.net/"
         return $false
     }
-
     $verLine = (& $java -version 2>&1) | Select-String "version" | Select-Object -First 1
-    Print-OK  "Java: $verLine"
+    Print-OK "Java: $verLine"
 
-    # Paths
-    $srcFile = Join-Path $ROOT "desktop-app\src\main\java\ai\ignition\desktop\DealershipDesktopApp.java"
-    $outDir  = Join-Path $ROOT "desktop-app\build\classes"
+    # ── App 1: Antigravity standalone Dealership Dashboard + OBD Simulator ────
+    Print-Info ""
+    Print-Info "  [1] Antigravity Dealership Dashboard (standalone, no phase deps)"
+    $srcDesktop = Join-Path $ROOT "desktop-app\src\main\java\ai\ignition\desktop\DealershipDesktopApp.java"
+    $srcSim     = Join-Path $ROOT "desktop-app\src\main\java\ai\ignition\simulator\ObdSimulatorApp.java"
+    $outDir1    = Join-Path $ROOT "desktop-app\build\classes"
+    New-Item -ItemType Directory -Force -Path $outDir1 | Out-Null
+    $srcs1 = @($srcDesktop)
+    if (Test-Path $srcSim) { $srcs1 += $srcSim }
+    $r1 = & $javac -d $outDir1 $srcs1 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Start-Process -FilePath $java -ArgumentList @("-cp", "`"$outDir1`"", "ai.ignition.desktop.DealershipDesktopApp") -WindowStyle Normal
+        Print-OK "Dealership Dashboard launched  (includes OBD Simulator via toolbar button)"
+    } else { Print-Err "Dealership Dashboard compile failed:"; $r1 | ForEach-Object { Print-Info $_ } }
 
-    if (-not (Test-Path $srcFile)) {
-        Print-Err "Source not found: $srcFile"
-        return $false
+    # ── App 2: ChatGPT full Phase 2-6 IgnitionDesktop ─────────────────────────
+    Print-Info ""
+    Print-Info "  [2] IgnitionDesktop — Full Phase 2-6 Assessment Workstation (ChatGPT)"
+
+    # Collect all backend module source dirs (native-core aggregator pattern)
+    $modules = @(
+        'application','anomaly-monitoring','certificate-snapshot','certificate-validation',
+        'consistency-checks','degradation-evidence-store','degradation-feature-builder',
+        'degradation-state-estimator','direct-features','episode-store','event-risk-estimator',
+        'evidence-store','expected-behaviour-model','fact-extraction','health-evidence',
+        'latex-certificate-generator','linked-registries','obd-input-and-pre-processing',
+        'obd-input-contract','phase4-contract','phase5-contract','phase6-contract',
+        'residual-calculation','severity-indicator','subsystem-health-score','technical-sources',
+        'trend-and-persistence-analyzer','uncertainty-calculation','vehicle-context',
+        'vehicle-health-index','virtual-sensors','tools/obd-generator'
+    )
+    $srcDirs = @(Join-Path $ROOT "native-desktop\src\main\java")
+    foreach ($mod in $modules) {
+        $d1 = Join-Path $ROOT "$mod\src\main\java"
+        $d2 = Join-Path $ROOT "$mod\src"
+        if (Test-Path $d1) { $srcDirs += $d1 } elseif (Test-Path $d2) { $srcDirs += $d2 }
+    }
+    $outDir2 = Join-Path $ROOT "native-desktop\build\classes"
+    New-Item -ItemType Directory -Force -Path $outDir2 | Out-Null
+
+    # Collect all .java source files
+    $javaFiles = @()
+    foreach ($dir in $srcDirs) {
+        $javaFiles += Get-ChildItem -Recurse -Path $dir -Filter "*.java" -ErrorAction SilentlyContinue |
+                      Where-Object { $_.Name -notmatch 'Test' -and $_.Name -ne 'Phase6Fixtures.java' } |
+                      Select-Object -ExpandProperty FullName
+    }
+    Print-Info "  Compiling $($javaFiles.Count) source files (all phases + IgnitionDesktop) ..."
+    $r2 = & $javac -encoding UTF-8 --release 17 -d $outDir2 $javaFiles 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        $sensorSrc = Join-Path $ROOT "virtual-sensors\src\main\resources\sensors"
+        Start-Process -FilePath $java -ArgumentList @(
+            "-cp", "`"$outDir2`"",
+            "-Dvirtual.sensors.dir=`"$sensorSrc`"",
+            "com.ignitionai.desktop.IgnitionDesktop"
+        ) -WindowStyle Normal
+        Print-OK "IgnitionDesktop launched  (full Phase 2-6 pipeline + simulator + telemetry charts)"
+    } else {
+        Print-Warn "IgnitionDesktop has compile errors (expected if some modules have stubs)."
+        Print-Info "Last 20 lines of errors:"
+        $r2 | Select-Object -Last 20 | ForEach-Object { Print-Info $_ }
     }
 
-    New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-
-    # Compile
-    Print-Info "Compiling DealershipDesktopApp.java ..."
-    $result = & $javac -d $outDir $srcFile 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Print-Err "Compilation failed:"
-        $result | ForEach-Object { Print-Info $_ }
-        return $false
-    }
-    Print-OK "Compiled -> $outDir"
-
-    # Launch in new window (non-blocking)
-    Print-Info "Starting GUI ..."
-    Start-Process -FilePath $java `
-        -ArgumentList @("-cp", "`"$outDir`"", "ai.ignition.desktop.DealershipDesktopApp") `
-        -WindowStyle Normal
-
-    Print-OK "Desktop application launched!"
     return $true
 }
+
 
 # =============================================================================
 # SECTION 2: Android APK

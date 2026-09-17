@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    // Covers BOTH ai.ignition.android and com.ignitionai.nativeapp source roots
+    namespace 'com.ignitionai.nativeapp'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.ignitionai.nativeapp"
+        minSdk 26
+        targetSdk 34
+        versionCode 2
+        versionName "2.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // Include ALL backend module sources via native-core aggregator pattern
+    // This makes InspectionService, Phase 2-6, etc. available on Android classpath
+    def repoRoot = rootProject.projectDir.parentFile  // android-app/../ = repo root
+    def modules = [
+        'application', 'anomaly-monitoring', 'certificate-snapshot', 'certificate-validation',
+        'consistency-checks', 'degradation-evidence-store', 'degradation-feature-builder',
+        'degradation-state-estimator', 'direct-features', 'episode-store', 'event-risk-estimator',
+        'evidence-store', 'expected-behaviour-model', 'fact-extraction', 'health-evidence',
+        'latex-certificate-generator', 'linked-registries', 'obd-input-and-pre-processing',
+        'obd-input-contract', 'phase4-contract', 'phase5-contract', 'phase6-contract',
+        'residual-calculation', 'severity-indicator', 'subsystem-health-score', 'technical-sources',
+        'trend-and-persistence-analyzer', 'uncertainty-calculation', 'vehicle-context',
+        'vehicle-health-index', 'virtual-sensors', 'tools/obd-generator'
+    ]
+
+    sourceSets {
+        main {
+            // Own Android sources (both ai.ignition.android and com.ignitionai.nativeapp)
+            java.srcDirs += [
+                'src/main/java'
+            ]
+            // Add every backend module's Java sources
+            modules.each { mod ->
+                def srcDir = new File(repoRoot, mod + '/src/main/java')
+                def altDir  = new File(repoRoot, mod + '/src')
+                if (srcDir.exists()) java.srcDirs += srcDir
+                else if (altDir.exists()) java.srcDirs += altDir
+            }
+            // Sensor manifests as Android assets
+            assets.srcDirs += [new File(repoRoot, 'virtual-sensors/src/main/resources')]
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    // JSON parsing (used by ObdJsonMapper / MiniJson already in source)
+    // No extra deps needed — backend uses its own MiniJson parser
+}
