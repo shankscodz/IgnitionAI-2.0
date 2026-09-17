@@ -1,6 +1,6 @@
 @echo off
 echo ===================================================
-echo Building IgnitionAI 2.0 Phase 3 Modules...
+echo Building IgnitionAI 2.0 Phase 4 Modules...
 echo ===================================================
 
 if not exist "out" mkdir "out"
