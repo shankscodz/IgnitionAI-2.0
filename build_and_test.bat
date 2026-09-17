@@ -7,7 +7,7 @@ if not exist "out" mkdir "out"
 
 rem Compile all modules
 powershell -Command "Get-ChildItem -Recurse -Filter *.java | ForEach-Object { '\"' + $_.FullName.Replace('\', '/') + '\"' } | Out-File -Encoding ascii sources.txt"
-javac -d out @sources.txt
+javac -encoding UTF-8 -d out @sources.txt
 del sources.txt
 
 if %ERRORLEVEL% NEQ 0 (
@@ -37,6 +37,21 @@ if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 echo.
 echo [TEST] Linked Registries
 java -cp out com.ignitionai.linkedregistries.test.LinkedRegistriesTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Vehicle Context (Phase 3)
+java -cp out com.ignitionai.context.VehicleContextTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Direct Features (Phase 3)
+java -cp out com.ignitionai.features.DirectFeaturesTest
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+
+echo.
+echo [TEST] Virtual Sensors (Phase 3)
+java -cp out com.ignitionai.virtualsensors.VirtualSensorsTest
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo.

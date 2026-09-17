@@ -1,0 +1,34 @@
+{
+  "schema_version": "obd-input.v1",
+  "message_id": "msg-001",
+  "session_id": "ses-001",
+  "sequence": 1,
+  "message_type": "telemetry",
+  "source_type": "simulation",
+  "emitted_at": "2026-09-17T12:00:00Z",
+  "received_at": "2026-09-17T12:00:01Z",
+  "vehicle_ref": {
+    "vehicle_id": "Tata Nexon Creative Plus",
+    "vin": "MAT00000000000000",
+    "identity_status": "verified"
+  },
+  "sensor_readings": [
+    {
+      "signal_id": "engine_coolant_temperature",
+      "value": 85.0,
+      "unit": "degC",
+      "measured_at": "2026-09-17T12:00:00Z",
+      "measurement_time_basis": "ecu",
+      "monotonic_ms": 1000,
+      "received_at": "2026-09-17T12:00:01Z",
+      "quality": { "status": "valid", "interpolated": false },
+      "provenance": { "response_reference": "ref-001" }
+    }
+  ],
+  "dtc_observations": [],
+  "raw_provenance": {
+    "adapter_id": "sim-adapter",
+    "adapter_version": "1.0",
+    "raw_record_ref": "raw-001"
+  }
+}
