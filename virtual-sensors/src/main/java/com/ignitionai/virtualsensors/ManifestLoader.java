@@ -32,6 +32,9 @@ public class ManifestLoader {
 
     private SensorDefinition parseManifest(File file) throws Exception {
         SensorDefinition def = new SensorDefinition();
+        Map<String, String> app = new HashMap<>();
+        Map<String, String> pre = new HashMap<>();
+        
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -57,9 +60,15 @@ public class ManifestLoader {
                     case "uncertainty_definition": def.setUncertaintyDefinition(value); break;
                     case "implementation_type": def.setImplementationType(value); break;
                     case "status": def.setStatus(value); break;
+                    default:
+                        if (key.startsWith("app_")) app.put(key.replace("app_", ""), value);
+                        else if (key.startsWith("pre_")) pre.put(key.replace("pre_", ""), value);
+                        break;
                 }
             }
         }
+        def.setVehicleApplicability(app);
+        def.setOperatingPreconditions(pre);
         return def;
     }
 

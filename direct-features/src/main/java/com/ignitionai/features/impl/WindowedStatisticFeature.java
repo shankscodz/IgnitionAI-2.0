@@ -9,45 +9,47 @@ import java.util.List;
 import java.util.Map;
 import java.util.Collections;
 
-public class SpeedMpsFeature implements Feature {
+public class WindowedStatisticFeature implements Feature {
     
     @Override
-    public String getFeatureId() { return "speed_mps"; }
+    public String getFeatureId() { return "coolant_mean_60s"; }
     
     @Override
-    public String getName() { return "Vehicle Speed (m/s)"; }
+    public String getName() { return "Coolant Temperature 60s Mean"; }
     
     @Override
-    public List<String> getInputs() { return List.of("vehicle_speed_kph"); }
+    public List<String> getInputs() { return List.of("engine_coolant_temperature"); }
     
     @Override
-    public String getUnits() { return "m/s"; }
+    public String getUnits() { return "degC"; }
     
     @Override
-    public String getFormula() { return "vehicle_speed_kph / 3.6"; }
+    public String getFormula() { return "mean(engine_coolant_temperature)"; }
     
     @Override
-    public String getWindow() { return "instantaneous"; }
+    public String getWindow() { return "60s"; }
     
     @Override
-    public String getFeatureVersion() { return "1.1"; }
+    public String getFeatureVersion() { return "1.0"; }
 
     @Override
     public FeatureValue calculate(Map<String, Double> inputObservations, Map<String, String> observationIds, VehicleContext context) {
         Long ts = context != null ? context.getContextTimestampMs() : null;
-        if (!inputObservations.containsKey("vehicle_speed_kph")) {
+        if (!inputObservations.containsKey("engine_coolant_temperature")) {
             return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
         }
         
-        Double speedKph = inputObservations.get("vehicle_speed_kph");
-        if (speedKph == null) {
+        Double temp = inputObservations.get("engine_coolant_temperature");
+        if (temp == null) {
             return FeatureValue.unavailable(getFeatureId(), FeatureStatus.UNAVAILABLE, getFeatureVersion(), ts);
         }
         
-        Double speedMps = speedKph / 3.6;
-        String obsId = observationIds.get("vehicle_speed_kph");
+        // Mocking window mean calculation for MVP
+        Double meanTemp = temp; 
+        
+        String obsId = observationIds.get("engine_coolant_temperature");
         List<String> obsIdList = obsId != null ? List.of(obsId) : Collections.emptyList();
         
-        return new FeatureValue(getFeatureId(), speedMps, FeatureStatus.AVAILABLE, obsIdList, ts, getUnits(), getFeatureVersion(), "valid");
+        return new FeatureValue(getFeatureId(), meanTemp, FeatureStatus.AVAILABLE, obsIdList, ts, getUnits(), getFeatureVersion(), "valid");
     }
 }

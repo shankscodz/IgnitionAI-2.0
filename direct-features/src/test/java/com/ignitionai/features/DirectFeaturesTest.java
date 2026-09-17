@@ -3,6 +3,7 @@ package com.ignitionai.features;
 import com.ignitionai.features.impl.SpeedMpsFeature;
 import com.ignitionai.features.impl.TimestampSecondsFeature;
 import com.ignitionai.context.VehicleContext;
+import com.ignitionai.context.VehicleContextManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,13 +26,15 @@ public class DirectFeaturesTest {
         Map<String, String> obsIds = new HashMap<>();
         obsIds.put("vehicle_speed_kph", "OBS-01");
         
-        VehicleContext ctx = new VehicleContext("V1");
+        VehicleContextManager manager = new VehicleContextManager();
+        VehicleContext ctx = manager.initializeContext("V1", 1000L);
         
         FeatureValue val = speedFeature.calculate(inputs, obsIds, ctx);
         
         assert val.getStatus() == FeatureStatus.AVAILABLE;
         assert Math.abs(val.getValue() - 10.0) < 0.001;
         assert val.getSourceObservationIds().contains("OBS-01");
+        assert val.getUnits().equals("m/s");
         System.out.println("  PASS  testFeatureCalculation");
     }
 
@@ -39,7 +42,8 @@ public class DirectFeaturesTest {
         SpeedMpsFeature speedFeature = new SpeedMpsFeature();
         Map<String, Double> inputs = new HashMap<>(); // missing vehicle_speed_kph
         
-        VehicleContext ctx = new VehicleContext("V1");
+        VehicleContextManager manager = new VehicleContextManager();
+        VehicleContext ctx = manager.initializeContext("V1", 1000L);
         
         FeatureValue val = speedFeature.calculate(inputs, new HashMap<>(), ctx);
         

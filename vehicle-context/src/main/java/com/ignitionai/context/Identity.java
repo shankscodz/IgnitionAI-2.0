@@ -1,44 +1,37 @@
 package com.ignitionai.context;
 
 import java.util.List;
+import java.util.Collections;
 
 public class Identity {
-    private String vehicleId;
-    private String vin;
-    private String ecuIdentity;
-    private List<String> calibrationIdentifiers;
-    private IdentityStatus identityStatus;
-    private String identitySource;
-    private double identityConfidence;
+    private final String vehicleId;
+    private final String vin;
+    private final String ecuIdentity;
+    private final List<String> calibrationIdentifiers;
+    private final IdentityStatus identityStatus;
+    private final String identitySource;
+    private final double identityConfidence;
 
     public enum IdentityStatus {
         VERIFIED, PARTIAL, UNKNOWN
     }
 
-    public Identity(String vehicleId) {
+    public Identity(String vehicleId, String vin, String ecuIdentity, List<String> calibrationIdentifiers, 
+                    IdentityStatus identityStatus, String identitySource, double identityConfidence) {
         this.vehicleId = vehicleId;
-        this.identityStatus = IdentityStatus.UNKNOWN;
+        this.vin = vin;
+        this.ecuIdentity = ecuIdentity;
+        this.calibrationIdentifiers = calibrationIdentifiers != null ? Collections.unmodifiableList(calibrationIdentifiers) : Collections.emptyList();
+        this.identityStatus = identityStatus != null ? identityStatus : IdentityStatus.UNKNOWN;
+        this.identitySource = identitySource;
+        this.identityConfidence = identityConfidence;
     }
 
-    // Getters and setters
     public String getVehicleId() { return vehicleId; }
-    public void setVehicleId(String vehicleId) { this.vehicleId = vehicleId; }
-
     public String getVin() { return vin; }
-    public void setVin(String vin) { this.vin = vin; }
-
     public String getEcuIdentity() { return ecuIdentity; }
-    public void setEcuIdentity(String ecuIdentity) { this.ecuIdentity = ecuIdentity; }
-
     public List<String> getCalibrationIdentifiers() { return calibrationIdentifiers; }
-    public void setCalibrationIdentifiers(List<String> calibrationIdentifiers) { this.calibrationIdentifiers = calibrationIdentifiers; }
-
     public IdentityStatus getIdentityStatus() { return identityStatus; }
-    public void setIdentityStatus(IdentityStatus identityStatus) { this.identityStatus = identityStatus; }
-
     public String getIdentitySource() { return identitySource; }
-    public void setIdentitySource(String identitySource) { this.identitySource = identitySource; }
-
     public double getIdentityConfidence() { return identityConfidence; }
-    public void setIdentityConfidence(double identityConfidence) { this.identityConfidence = identityConfidence; }
 }

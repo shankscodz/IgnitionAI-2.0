@@ -1,50 +1,43 @@
 package com.ignitionai.context;
 
 public class Configuration {
-    private String manufacturer;
-    private String model;
-    private Integer modelYear;
-    private String engineFamily;
-    private String engineCode;
-    private String fuelType;
-    private String transmission;
-    private String market;
-    private String softwareVariant;
-    private String applicabilityEvidence;
+    private final String manufacturer;
+    private final String model;
+    private final Integer modelYear;
+    private final String engineFamily;
+    private final String engineCode;
+    private final String fuelType;
+    private final String transmission;
+    private final String market;
+    private final String softwareVariant;
+    private final String applicabilityEvidence;
+    private final DataState state;
 
-    private DataState state = DataState.UNKNOWN;
+    public Configuration(String manufacturer, String model, Integer modelYear, String engineFamily, 
+                         String engineCode, String fuelType, String transmission, String market, 
+                         String softwareVariant, String applicabilityEvidence, DataState state) {
+        this.manufacturer = manufacturer;
+        this.model = model;
+        this.modelYear = modelYear;
+        this.engineFamily = engineFamily;
+        this.engineCode = engineCode;
+        this.fuelType = fuelType;
+        this.transmission = transmission;
+        this.market = market;
+        this.softwareVariant = softwareVariant;
+        this.applicabilityEvidence = applicabilityEvidence;
+        this.state = state != null ? state : DataState.UNKNOWN;
+    }
 
-    // Getters and setters
     public String getManufacturer() { return manufacturer; }
-    public void setManufacturer(String manufacturer) { this.manufacturer = manufacturer; }
-
     public String getModel() { return model; }
-    public void setModel(String model) { this.model = model; }
-
     public Integer getModelYear() { return modelYear; }
-    public void setModelYear(Integer modelYear) { this.modelYear = modelYear; }
-
     public String getEngineFamily() { return engineFamily; }
-    public void setEngineFamily(String engineFamily) { this.engineFamily = engineFamily; }
-
     public String getEngineCode() { return engineCode; }
-    public void setEngineCode(String engineCode) { this.engineCode = engineCode; }
-
     public String getFuelType() { return fuelType; }
-    public void setFuelType(String fuelType) { this.fuelType = fuelType; }
-
     public String getTransmission() { return transmission; }
-    public void setTransmission(String transmission) { this.transmission = transmission; }
-
     public String getMarket() { return market; }
-    public void setMarket(String market) { this.market = market; }
-
     public String getSoftwareVariant() { return softwareVariant; }
-    public void setSoftwareVariant(String softwareVariant) { this.softwareVariant = softwareVariant; }
-
     public String getApplicabilityEvidence() { return applicabilityEvidence; }
-    public void setApplicabilityEvidence(String applicabilityEvidence) { this.applicabilityEvidence = applicabilityEvidence; }
-
     public DataState getState() { return state; }
-    public void setState(DataState state) { this.state = state; }
 }

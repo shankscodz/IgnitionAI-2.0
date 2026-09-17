@@ -1,58 +1,53 @@
 package com.ignitionai.context;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class EvidenceQuality {
-    private Set<String> supportedSignals;
-    private Set<String> observedSignals;
-    private Set<String> missingSignals;
-    private Map<String, Double> samplingRates;
-    private List<String> gaps;
-    private Integer staleReadings = 0;
-    private Integer invalidReadings = 0;
+    private final Set<String> supportedSignals;
+    private final Set<String> observedSignals;
+    private final Set<String> missingSignals;
+    private final Map<String, Double> samplingRates;
+    private final List<String> gaps;
+    private final Integer staleReadings;
+    private final Integer invalidReadings;
     
-    private Boolean dtcAvailability;
-    private String readinessContext;
-    private List<String> previousSessionReferences;
-    private Long exposureDurationMs;
-    private String contextVersion;
+    private final Boolean dtcAvailability;
+    private final String readinessContext;
+    private final List<String> previousSessionReferences;
+    private final Long exposureDurationMs;
+    private final String contextVersion;
 
-    // Getters and setters
+    public EvidenceQuality(Set<String> supportedSignals, Set<String> observedSignals, Set<String> missingSignals, 
+                           Map<String, Double> samplingRates, List<String> gaps, Integer staleReadings, 
+                           Integer invalidReadings, Boolean dtcAvailability, String readinessContext, 
+                           List<String> previousSessionReferences, Long exposureDurationMs, String contextVersion) {
+        this.supportedSignals = supportedSignals != null ? Collections.unmodifiableSet(supportedSignals) : Collections.emptySet();
+        this.observedSignals = observedSignals != null ? Collections.unmodifiableSet(observedSignals) : Collections.emptySet();
+        this.missingSignals = missingSignals != null ? Collections.unmodifiableSet(missingSignals) : Collections.emptySet();
+        this.samplingRates = samplingRates != null ? Collections.unmodifiableMap(samplingRates) : Collections.emptyMap();
+        this.gaps = gaps != null ? Collections.unmodifiableList(gaps) : Collections.emptyList();
+        this.staleReadings = staleReadings != null ? staleReadings : 0;
+        this.invalidReadings = invalidReadings != null ? invalidReadings : 0;
+        this.dtcAvailability = dtcAvailability;
+        this.readinessContext = readinessContext;
+        this.previousSessionReferences = previousSessionReferences != null ? Collections.unmodifiableList(previousSessionReferences) : Collections.emptyList();
+        this.exposureDurationMs = exposureDurationMs;
+        this.contextVersion = contextVersion;
+    }
+
     public Set<String> getSupportedSignals() { return supportedSignals; }
-    public void setSupportedSignals(Set<String> supportedSignals) { this.supportedSignals = supportedSignals; }
-
     public Set<String> getObservedSignals() { return observedSignals; }
-    public void setObservedSignals(Set<String> observedSignals) { this.observedSignals = observedSignals; }
-
     public Set<String> getMissingSignals() { return missingSignals; }
-    public void setMissingSignals(Set<String> missingSignals) { this.missingSignals = missingSignals; }
-
     public Map<String, Double> getSamplingRates() { return samplingRates; }
-    public void setSamplingRates(Map<String, Double> samplingRates) { this.samplingRates = samplingRates; }
-
     public List<String> getGaps() { return gaps; }
-    public void setGaps(List<String> gaps) { this.gaps = gaps; }
-
     public Integer getStaleReadings() { return staleReadings; }
-    public void setStaleReadings(Integer staleReadings) { this.staleReadings = staleReadings; }
-
     public Integer getInvalidReadings() { return invalidReadings; }
-    public void setInvalidReadings(Integer invalidReadings) { this.invalidReadings = invalidReadings; }
-
     public Boolean getDtcAvailability() { return dtcAvailability; }
-    public void setDtcAvailability(Boolean dtcAvailability) { this.dtcAvailability = dtcAvailability; }
-
     public String getReadinessContext() { return readinessContext; }
-    public void setReadinessContext(String readinessContext) { this.readinessContext = readinessContext; }
-
     public List<String> getPreviousSessionReferences() { return previousSessionReferences; }
-    public void setPreviousSessionReferences(List<String> previousSessionReferences) { this.previousSessionReferences = previousSessionReferences; }
-
     public Long getExposureDurationMs() { return exposureDurationMs; }
-    public void setExposureDurationMs(Long exposureDurationMs) { this.exposureDurationMs = exposureDurationMs; }
-
     public String getContextVersion() { return contextVersion; }
-    public void setContextVersion(String contextVersion) { this.contextVersion = contextVersion; }
 }

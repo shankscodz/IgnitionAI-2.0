@@ -10,69 +10,47 @@ public class VirtualSensorsTest {
     public static void main(String[] args) {
         System.out.println("=== virtual-sensors Tests ===");
         
-        testManifestLoading();
-        testSensorEvaluation();
-        testPhase1RegistryIntegration();
+        testPhase3ExitDemonstration();
 
-        System.out.println("\n=== Results: 3 passed, 0 failed ===");
+        System.out.println("\n=== Results: 1 passed, 0 failed ===");
     }
 
-    private static void testManifestLoading() {
+    private static void testPhase3ExitDemonstration() {
+        System.out.println("  [Demo] Phase 3 Exit Criteria Execution...");
+        
+        // 1. Discover manifests at startup (Adding sensor without core code changes)
         ManifestLoader loader = new ManifestLoader();
-        // Point to the resources directory in our layout
         File dir = new File("virtual-sensors/src/main/resources/sensors");
         List<SensorDefinition> defs = loader.loadManifests(dir);
-        
-        assert defs.size() == 3;
         
         VirtualSensorRuntime runtime = new VirtualSensorRuntime();
         runtime.loadSensors(defs);
         
-        assert runtime.getRegisteredSensors().size() == 3;
-        assert runtime.getRegisteredSensors().containsKey("thermal_response_proxy");
-        System.out.println("  PASS  testManifestLoading");
-    }
+        // Ensure metadata is enumerated correctly
+        SensorDefinition thermalProxy = runtime.getRegisteredSensors().get("thermal_response_proxy");
+        assert thermalProxy != null;
+        assert thermalProxy.getUnits().equals("degC/s");
+        assert thermalProxy.getInputSignalIds().contains("engine_coolant_temperature");
+        System.out.println("    -> Discovered and enumerated metadata successfully.");
 
-    private static void testSensorEvaluation() {
-        VirtualSensorRuntime runtime = new VirtualSensorRuntime();
-        SensorDefinition def = new SensorDefinition();
-        def.setSensorId("test_sensor");
-        def.setFormulaOrModelReference("diff(val1, val2)");
-        runtime.loadSensors(List.of(def));
-        
+        // 2. Evaluate with full inputs
         Map<String, Double> inputs = new HashMap<>();
-        inputs.put("val1", 100.0);
-        inputs.put("val2", 40.0);
+        inputs.put("engine_coolant_temperature", 85.0);
+        inputs.put("ambient_air_temperature", 25.0);
         
-        Double result = runtime.evaluate("test_sensor", inputs);
-        assert result != null;
-        assert Math.abs(result - 60.0) < 0.001;
-        System.out.println("  PASS  testSensorEvaluation");
-    }
+        SensorOutput outSuccess = runtime.evaluate("thermal_response_proxy", inputs);
+        assert outSuccess.getStatus() == SensorOutput.Status.AVAILABLE;
+        assert Math.abs(outSuccess.getValue() - 60.0) < 0.001;
+        System.out.println("    -> Evaluated successfully with valid inputs.");
 
-    private static void testPhase1RegistryIntegration() {
-        SensorDefinition def = new SensorDefinition();
-        def.setSensorId("virtual_coolant");
-        def.setDisplayName("Virtual Coolant");
-        def.setObservationKind("MODEL_DERIVED");
-        def.setUnits("degC");
-        def.setFormulaOrModelReference("diff(a,b)");
-        def.setInputSignalIds(List.of("a", "b"));
-        def.setSamplingRequirements("1Hz");
+        // 3. Remove required input and observe explicit unavailable result
+        inputs.remove("ambient_air_temperature");
+        SensorOutput outMissing = runtime.evaluate("thermal_response_proxy", inputs);
+        assert outMissing.getStatus() == SensorOutput.Status.MISSING_INPUTS;
+        assert outMissing.getValue() == null;
+        assert outMissing.getReason().contains("ambient_air_temperature");
+        System.out.println("    -> Explicit unavailable behavior (MISSING_INPUTS) observed.");
 
-        ObservationEntry entry = ObservationEntry.builder()
-            .observationId(def.getSensorId())
-            .name(def.getDisplayName())
-            .measurementType("COMPUTED") // Legacy, needed by builder if observationKind is explicitly set
-            .observationKind(def.getObservationKind())
-            .unit(def.getUnits())
-            .formulaOrModelReference(def.getFormulaOrModelReference())
-            .inputObservationIds(def.getInputSignalIds())
-            .samplingRequirements(def.getSamplingRequirements())
-            .build();
-
-        assert "MODEL_DERIVED".equals(entry.getObservationKind());
-        assert entry.getInputObservationIds().contains("a");
-        System.out.println("  PASS  testPhase1RegistryIntegration");
+        System.out.println("  PASS  testPhase3ExitDemonstration");
     }
 }

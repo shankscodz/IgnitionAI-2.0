@@ -30,23 +30,24 @@ public class TimestampSecondsFeature implements Feature {
     public String getWindow() { return "instantaneous"; }
     
     @Override
-    public String getFeatureVersion() { return "1.0"; }
+    public String getFeatureVersion() { return "1.1"; }
 
     @Override
     public FeatureValue calculate(Map<String, Double> inputObservations, Map<String, String> observationIds, VehicleContext context) {
+        Long ts = context != null ? context.getContextTimestampMs() : null;
         if (!inputObservations.containsKey("monotonic_ms")) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA);
+            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.INSUFFICIENT_DATA, getFeatureVersion(), ts);
         }
         
         Double monotonicMs = inputObservations.get("monotonic_ms");
         if (monotonicMs == null) {
-            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.UNAVAILABLE);
+            return FeatureValue.unavailable(getFeatureId(), FeatureStatus.UNAVAILABLE, getFeatureVersion(), ts);
         }
         
         Double tsSeconds = monotonicMs / 1000.0;
         String obsId = observationIds.get("monotonic_ms");
         List<String> obsIdList = obsId != null ? List.of(obsId) : Collections.emptyList();
         
-        return new FeatureValue(getFeatureId(), tsSeconds, FeatureStatus.AVAILABLE, obsIdList);
+        return new FeatureValue(getFeatureId(), tsSeconds, FeatureStatus.AVAILABLE, obsIdList, ts, getUnits(), getFeatureVersion(), "valid");
     }
 }
