@@ -46,6 +46,7 @@ public final class InspectionService {
         Map<String, AnomalyEpisode> active = new TreeMap<>();
         Map<String, Double> latest = new TreeMap<>();
         Map<String, Integer> validCounts = new TreeMap<>();
+        Map<String, Integer> rangeViolations = new TreeMap<>();
         Map<String, AnalyticalObservation> observed = new TreeMap<>();
         List<ObdMessage> normalized = new ArrayList<>();
         List<AnomalyEpisode> episodes = new ArrayList<>();
@@ -75,6 +76,7 @@ public final class InspectionService {
                 long t = r.getMonotonicMs(); start = Math.min(start, t); end = Math.max(end, t);
                 latest.put(r.getSignalId(), r.getValue());
                 validCounts.merge(r.getSignalId(), 1, Integer::sum);
+                if (!inPlausibleRange(r.getSignalId(), r.getValue())) rangeViolations.merge(r.getSignalId(), 1, Integer::sum);
                 context = cm.transitionContext(context, latest, t);
                 // Session-scoped evidence prevents identical simulator sequence numbers from colliding across visits.
                 String ref = session + "/" + msg.getMessageId() + "/" + r.getSignalId() + "/" + t;
@@ -180,14 +182,18 @@ public final class InspectionService {
                 } else {
                     // A score is useful in the simulator even before vehicle-specific history exists.
                     // It is deliberately low-confidence and is labelled as an indicator, never as calibrated health.
-                    double score = Math.max(0, Math.min(100, 100 - Optional.ofNullable(last.getDegradationScore()).orElse(0.0)));
+                    double score = preliminaryScore(signal, last.getDegradationScore(), validCounts, rangeViolations);
                     SeverityLevel severity = score < 50 ? SeverityLevel.CRITICAL : score < 75 ? SeverityLevel.DEGRADED : SeverityLevel.WATCH;
                     List<String> flags = new ArrayList<>(calculated.getDegradedDataFlags()); flags.add("PRELIMINARY_INDICATOR_ONLY");
-                    subs.add(new SubsystemHealthAssessment(signal, signal, severity, score, 0.15, 0.85, flags,
+                    double confidence = preliminaryConfidence(signal, validCounts, rangeViolations);
+                    subs.add(new SubsystemHealthAssessment(signal, signal, severity, score, confidence, 1 - confidence, flags,
                         last.getEvidenceReferences() == null ? List.of() : last.getEvidenceReferences(), false));
                 }
             } else if (validCounts.containsKey(signal)) {
-                subs.add(new SubsystemHealthAssessment(signal, signal, SeverityLevel.NORMAL, 100.0, 0.15, 0.85,
+                double score = preliminaryScore(signal, null, validCounts, rangeViolations);
+                double confidence = preliminaryConfidence(signal, validCounts, rangeViolations);
+                SeverityLevel severity = score < 50 ? SeverityLevel.CRITICAL : score < 75 ? SeverityLevel.DEGRADED : score < 90 ? SeverityLevel.WATCH : SeverityLevel.NORMAL;
+                subs.add(new SubsystemHealthAssessment(signal, signal, severity, score, confidence, 1 - confidence,
                     List.of("NO_ESTABLISHED_DEGRADATION_HISTORY", "PRELIMINARY_INDICATOR_ONLY", "RISK_UNAVAILABLE"),
                     observed.get(signal).getSourceObservationReferences(), false));
             } else subs.add(new SubsystemHealthAssessment(signal, signal, SeverityLevel.UNKNOWN, null, 0.0, 1.0,
@@ -210,5 +216,30 @@ public final class InspectionService {
         for (byte b : digest.digest()) fingerprint.append(String.format(Locale.ROOT, "%02x", b & 255));
         return new InspectionResult(normalized, episodes, degradation, new ArrayList<>(all.values()), notes,
             new CertificateSnapshot(assessment, first.getSourceType().name(), session, fingerprint.toString()));
+    }
+
+    private static boolean inPlausibleRange(String signal, double value) {
+        return switch (signal) {
+            case "engine_rpm" -> value >= 0 && value <= 8000;
+            case "vehicle_speed" -> value >= 0 && value <= 250;
+            case "coolant_temperature" -> value >= -40 && value <= 140;
+            case "calculated_engine_load", "throttle_position" -> value >= 0 && value <= 100;
+            default -> Double.isFinite(value);
+        };
+    }
+
+    private static double preliminaryScore(String signal, Double degradationScore, Map<String, Integer> counts, Map<String, Integer> violations) {
+        int count = counts.getOrDefault(signal, 0);
+        double invalidFraction = count == 0 ? 1.0 : violations.getOrDefault(signal, 0) / (double) count;
+        double plausibilityPenalty = Math.min(70.0, invalidFraction * 70.0);
+        double degradationPenalty = degradationScore == null ? 0.0 : Math.max(0.0, Math.min(100.0, degradationScore));
+        return Math.max(0.0, Math.min(100.0, 100.0 - plausibilityPenalty - degradationPenalty));
+    }
+
+    private static double preliminaryConfidence(String signal, Map<String, Integer> counts, Map<String, Integer> violations) {
+        int count = counts.getOrDefault(signal, 0);
+        double sampleCoverage = 1.0 - Math.exp(-count / 60.0);
+        double validity = count == 0 ? 0.0 : 1.0 - violations.getOrDefault(signal, 0) / (double) count;
+        return Math.max(0.05, Math.min(0.85, 0.10 + 0.65 * sampleCoverage * validity));
     }
 }

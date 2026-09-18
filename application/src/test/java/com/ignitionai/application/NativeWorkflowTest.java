@@ -39,6 +39,12 @@ public final class NativeWorkflowTest {
             check(!a.observations.isEmpty(), "Phase 3 not executed");
             check(a.certificate.getHealthAssessment().getVehicleHealthIndex() != null, "Preliminary report has no usable indicator score");
             check(a.certificate.getHealthAssessment().getDataQualityStatus().equals("PARTIAL"), "Preliminary score must disclose partial data quality");
+            String healthyScenario = ScenarioFile.example().replace("engine_rpm.bias=500", "engine_rpm.bias=0").replace("dtcs=P0301", "dtcs=");
+            String implausibleScenario = healthyScenario.replace("engine_rpm.points=0:800,10000:800,15000:2200,45000:2200,50000:800,60000:800", "engine_rpm.points=0:9000,60000:9000");
+            var healthy = service.assess(new ObdGenerator(ScenarioFile.parse(healthyScenario)).generate().getPublicStream()).certificate.getHealthAssessment();
+            var implausible = service.assess(new ObdGenerator(ScenarioFile.parse(implausibleScenario)).generate().getPublicStream()).certificate.getHealthAssessment();
+            check(!healthy.getVehicleHealthIndex().equals(implausible.getVehicleHealthIndex()), "Different telemetry collapsed to one hardcoded VHI");
+            check(!healthy.getOverallConfidence().equals(implausible.getOverallConfidence()), "Confidence did not respond to data quality");
             check(a.certificate.getHealthAssessment().getAssessmentTimestamp().contains("T"), "Timestamp not UTC");
             boolean rejected = false;
             try { MiniJson.parse("{\"x\":1} trailing"); } catch (RuntimeException e) { rejected=true; }
